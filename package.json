@@ -1,0 +1,23 @@
+{
+  "name": "azimuth",
+  "version": "0.1.0",
+  "description": "Antenna pointing: bearing and distance from home to target (short and long path). Windows 11, Electron, offline-first maps.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "echo 'Not yet implemented'"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "azimuth",
+    "bearing",
+    "great-circle",
+    "antenna",
+    "RF"
+  ],
+  "author": "",
+  "license": "UNLICENSED"
+}
