@@ -143,10 +143,10 @@ Both options must always be presented so the user can choose which direction to 
 
 ---
 
-### Phase 4 — Target by map click
+### Phase 4 — Target by map click ✅ Complete
 - [x] Click on map to set target (in addition to coords and saved list); option to **save** clicked position as a new stored target.
 - [x] When target changes (click, form, or list): update target marker, redraw great-circle lines (home → target), recompute and show **both** paths (bearing from North, direction, distance).
-- [ ] E2e test: click on map → target updates → lines and both path bearings/distances update correctly.
+- [ ] E2e test: click on map → target updates → lines and both path bearings/distances update correctly. _(Deferred to Phase 7.)_
 
 **Deliverable:** Target selectable by map click; same visual (target marker, lines) and numeric output; optional save to target list.
 
@@ -166,12 +166,12 @@ Both options must always be presented so the user can choose which direction to 
 
 ---
 
-### Phase 6 — Security and hardening
-- [ ] Identify sensitive data: stored home/target locations (local only; no accounts).
-- [ ] **No encryption** and **no MFA** per product decision; all preferences and locations stored locally in plain form.
-- [ ] No secrets in repo; **no paid map services** — use only free, open tile sources (e.g. OSM, Natural Earth); attribution as required by license, no API keys or subscriptions.
+### Phase 6 — Security and hardening ✅ Complete
+- [x] Identify sensitive data: stored home/target locations (local only; no accounts).
+- [x] **No encryption** and **no MFA** per product decision; all preferences and locations stored locally in plain form.
+- [x] No secrets in repo; **no paid map services** — use only free, open tile sources (e.g. OSM, Natural Earth); attribution as required by license, no API keys or subscriptions.
 
-**Deliverable:** Security posture documented; local-only storage; no encryption/MFA.
+**Deliverable:** Security posture documented in `docs/security.md`; local-only storage; no encryption/MFA.
 
 ---
 

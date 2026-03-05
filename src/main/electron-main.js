@@ -5,7 +5,6 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const isDev = process.env.NODE_ENV !== "production";
 
 const DEFAULT_HOME = {
   id: "default-dc",
@@ -74,7 +73,7 @@ function createWindow() {
     },
   });
   win.loadFile(join(__dirname, "..", "..", "dist", "renderer", "index.html"));
-  if (isDev) win.webContents.openDevTools();
+  // DevTools: open manually via F12 or Application menu if needed. Auto-open was removed to avoid console noise from DevTools internals (Autofill/remote fetch errors).
 }
 
 app.whenReady().then(() => {
