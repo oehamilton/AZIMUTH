@@ -278,11 +278,13 @@ function syncHomeFormToSelection() {
   const sel = document.getElementById("home-select");
   const btn = document.getElementById("home-submit-btn");
   const delBtn = document.getElementById("delete-home-btn");
+  const nameRow = document.getElementById("home-name-row");
   if (!sel || !btn) return;
   if (sel.value === NEW_HOME_VALUE || sel.value === "") {
     clearHomeForm();
     btn.textContent = "Add home";
     if (delBtn) delBtn.style.display = "none";
+    if (nameRow) nameRow.classList.add("visible");
   } else {
     const home = state.homes.find((h) => h.id === sel.value);
     if (home) {
@@ -290,6 +292,7 @@ function syncHomeFormToSelection() {
       btn.textContent = "Update home";
       if (delBtn) delBtn.style.display = "block";
     }
+    if (nameRow) nameRow.classList.remove("visible");
   }
 }
 
@@ -330,6 +333,7 @@ function syncTargetFormToSelection() {
   const btn = document.getElementById("target-submit-btn");
   const saveBtn = document.getElementById("save-target-btn");
   const delBtn = document.getElementById("delete-target-btn");
+  const nameRow = document.getElementById("target-name-row");
   if (!btn) return;
   if (state.targetCoords) {
     fillTargetForm(state.targetCoords);
@@ -337,11 +341,13 @@ function syncTargetFormToSelection() {
     btn.textContent = "Set target";
     if (saveBtn) saveBtn.style.display = "block";
     if (delBtn) delBtn.style.display = "none";
+    if (nameRow) nameRow.classList.add("visible");
   } else if (sel?.value === NEW_TARGET_VALUE || (!state.selectedTargetId && !state.targetCoords)) {
     clearTargetForm();
     btn.textContent = "Add target";
     if (saveBtn) saveBtn.style.display = "none";
     if (delBtn) delBtn.style.display = "none";
+    if (nameRow) nameRow.classList.add("visible");
   } else if (state.selectedTargetId) {
     const t = state.targets.find((x) => x.id === state.selectedTargetId);
     if (t) {
@@ -350,11 +356,13 @@ function syncTargetFormToSelection() {
     }
     if (saveBtn) saveBtn.style.display = "none";
     if (delBtn) delBtn.style.display = "block";
+    if (nameRow) nameRow.classList.remove("visible");
   } else {
     clearTargetForm();
     btn.textContent = "Set target";
     if (saveBtn) saveBtn.style.display = "none";
     if (delBtn) delBtn.style.display = "none";
+    if (nameRow) nameRow.classList.remove("visible");
   }
 }
 

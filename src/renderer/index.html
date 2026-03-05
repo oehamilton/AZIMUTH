@@ -24,16 +24,17 @@
     body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg-app); color: var(--text); font-size: 14px; line-height: 1.45; }
     #app { display: flex; height: 100vh; min-width: 640px; }
     #sidebar { width: 300px; min-width: 280px; padding: 1rem; background: var(--bg-sidebar); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem; }
-    #sidebar h2 { margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600; color: var(--accent); letter-spacing: 0.02em; }
-    form.side-form { display: flex; flex-direction: column; gap: 0.5rem; }
-    form.side-form input { padding: 0.5rem 0.6rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.9rem; }
+    #sidebar h2 { margin: 0 0 0.4rem 0; font-size: 0.8125rem; font-weight: 600; color: var(--accent); letter-spacing: 0.02em; }
+    form.side-form { display: flex; flex-direction: column; gap: 0.4rem; }
+    form.side-form input { padding: 0.4rem 0.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.85rem; }
     form.side-form input::placeholder { color: var(--text-muted); }
-    form.side-form button { padding: 0.55rem; background: var(--accent); color: var(--bg-app); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+    form.side-form button { padding: 0.45rem; background: var(--accent); color: var(--bg-app); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
     form.side-form button:hover { filter: brightness(1.08); }
-    .btn-danger { padding: 0.45rem; background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+    .btn-danger { padding: 0.4rem; background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
     .btn-danger:hover { background: #6d4542; }
-    .dropdown-label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .sidebar-select { width: 100%; padding: 0.5rem 0.6rem; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.9rem; }
+    .sidebar-select { width: 100%; padding: 0.4rem 0.5rem; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.4rem; font-size: 0.85rem; }
+    .form-row-name { display: none; }
+    .form-row-name.visible { display: block; }
     #results { background: var(--bg-card); padding: 1rem; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--border); }
     #results .unit-select { margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted); }
     #results .unit-select select { background: var(--bg-app); color: var(--text); border: 1px solid var(--border); padding: 0.35rem 0.5rem; border-radius: 4px; margin-left: 0.25rem; }
@@ -56,6 +57,8 @@
     #map-legend .leg-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.25rem; vertical-align: middle; }
     #map-legend .leg-dot.home { background: var(--color-home); }
     #map-legend .leg-dot.target { background: var(--color-target); }
+    #homes-section { border: 1px solid var(--color-home); border-radius: 8px; padding: 0.75rem; }
+    #targets-section { border: 1px solid var(--color-target); border-radius: 8px; padding: 0.75rem; }
     .home-marker { fill: var(--color-home); stroke: #1a1a1a; stroke-width: 2; }
     .target-marker { fill: var(--color-target); stroke: #1a1a1a; stroke-width: 2; }
     .path-short { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.9; }
@@ -68,37 +71,39 @@
   <div id="load-status" style="position:fixed;top:0;left:0;right:0;padding:0.5rem;background:#252220;color:#c4a574;font-size:0.9rem;z-index:9999;">Loading…</div>
   <div id="app">
     <aside id="sidebar">
-      <section>
+      <section id="results">
+        <div class="unit-select">Distance: <select id="distance-unit"><option value="km">km</option><option value="nm">nm</option><option value="miles">miles</option></select></div>
+        <div id="results-content">Set a home and target to see paths.</div>
+      </section>
+      <section id="homes-section">
         <h2>Homes</h2>
-        <label class="dropdown-label">Current home</label>
         <select id="home-select" class="sidebar-select" aria-label="Select saved home"></select>
-        <form id="add-home" class="side-form" style="margin-top: 0.5rem;">
-          <input type="text" id="home-name" placeholder="Name" required />
+        <form id="add-home" class="side-form" style="margin-top: 0.35rem;">
+          <div id="home-name-row" class="form-row-name">
+            <input type="text" id="home-name" placeholder="Name" required />
+          </div>
           <input type="number" id="home-lat" placeholder="Lat (decimal)" step="any" required />
           <input type="number" id="home-lon" placeholder="Lon (decimal)" step="any" required />
           <input type="number" id="home-decl" placeholder="Mag decl (°)" step="any" />
           <button type="submit" id="home-submit-btn">Add home</button>
         </form>
-        <button type="button" id="delete-home-btn" class="btn-danger" style="margin-top: 0.25rem; display: none;">Delete home</button>
+        <button type="button" id="delete-home-btn" class="btn-danger" style="margin-top: 0.2rem; display: none;">Delete home</button>
       </section>
-      <section>
+      <section id="targets-section">
         <h2>Targets</h2>
-        <label class="dropdown-label">Current target</label>
         <select id="target-select" class="sidebar-select" aria-label="Select saved target"></select>
-        <form id="set-target" class="side-form" style="margin-top: 0.5rem;">
-          <input type="text" id="target-name" placeholder="Target name (optional)" />
+        <form id="set-target" class="side-form" style="margin-top: 0.35rem;">
+          <div id="target-name-row" class="form-row-name">
+            <input type="text" id="target-name" placeholder="Target name (optional)" />
+          </div>
           <input type="number" id="target-lat" placeholder="Lat (decimal)" step="any" />
           <input type="number" id="target-lon" placeholder="Lon (decimal)" step="any" />
           <button type="submit" id="target-submit-btn">Set target</button>
         </form>
-        <button type="button" id="save-target-btn" style="margin-top: 0.25rem; padding: 0.45rem; background: var(--border); color: var(--text); border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: none;">Save as target</button>
-        <button type="button" id="delete-target-btn" class="btn-danger" style="margin-top: 0.25rem; display: none;">Delete target</button>
+        <button type="button" id="save-target-btn" style="margin-top: 0.2rem; padding: 0.4rem; background: var(--border); color: var(--text); border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; display: none;">Save as target</button>
+        <button type="button" id="delete-target-btn" class="btn-danger" style="margin-top: 0.2rem; display: none;">Delete target</button>
         <p class="sidebar-hint" id="target-hint">Or click on the map to set target.</p>
         <div id="sidebar-error" class="sidebar-error" role="alert"></div>
-      </section>
-      <section id="results">
-        <div class="unit-select">Distance: <select id="distance-unit"><option value="km">km</option><option value="nm">nm</option><option value="miles">miles</option></select></div>
-        <div id="results-content">Set a home and target to see paths.</div>
       </section>
     </aside>
     <div id="map-container">
