@@ -66,43 +66,43 @@ Both options must always be presented so the user can choose which direction to 
 
 ## 4. Iterative phases
 
-### Phase 0 — Setup and planning
-- [ ] Initialize repo: `pnpm init`, add `.gitignore`, basic README.
-- [ ] Choose stack: **Windows desktop app** (Electron), **Windows 11 only**, **MSIX** installer. Map library that supports **flat azimuthal** projection and great-circle lines — choose simplest option. **Maps: no paid subscriptions.** Use a **bundled default world map** (free source, e.g. Natural Earth or OSM-derived) so the app works offline from first launch; add **optional user-triggered caching** from a free tile source (e.g. OSM) when online. See Section 7 for details.
-- [ ] Define data structures for **saved home locations** (e.g. id, name, lat, lon, magneticDeclination° optional; notes) and **saved target locations** (e.g. id, name, lat, lon; optional notes). Single **JSON** file with **schema version** field. Persistence: **local storage** (local file or app data); optional **user-chosen path** (e.g. OneDrive folder). **Default home** when none exist: Washington DC, White House (38.8977 N, 77.0365 W).
-- [ ] Create `prd.md` with features, user stories, and acceptance criteria.
-- [ ] Add this plan to `plan.md` and use it as the living to-do list.
-- [ ] Document open questions and TBDs in this plan.
+### Phase 0 — Setup and planning ✅ Complete
+- [x] Initialize repo: `pnpm init`, add `.gitignore`, basic README.
+- [x] Choose stack: **Windows desktop app** (Electron), **Windows 11 only**, **MSIX** installer. Map library that supports **flat azimuthal** projection and great-circle lines — choose simplest option. **Maps: no paid subscriptions.** Use a **bundled default world map** (free source, e.g. Natural Earth or OSM-derived) so the app works offline from first launch; add **optional user-triggered caching** from a free tile source (e.g. OSM) when online. See Section 7 for details.
+- [x] Define data structures for **saved home locations** (e.g. id, name, lat, lon, magneticDeclination° optional; notes) and **saved target locations** (e.g. id, name, lat, lon; optional notes). Single **JSON** file with **schema version** field. Persistence: **local storage** (local file or app data); optional **user-chosen path** (e.g. OneDrive folder). **Default home** when none exist: Washington DC, White House (38.8977 N, 77.0365 W).
+- [x] Create `prd.md` with features, user stories, and acceptance criteria.
+- [x] Add this plan to `plan.md` and use it as the living to-do list.
+- [x] Document open questions and TBDs in this plan.
 
 **Deliverable:** Repo ready, Windows app stack and simplest map approach chosen, location schema and local storage (with optional path) defined, PRD and plan in place.
 
 #### Phase 0 — Detailed steps
 
 1. **Initialize repo and tooling**
-   - [ ] Run `pnpm init` in project root (creates `package.json`).
-   - [ ] Add `.gitignore` (include: `node_modules/`, `dist/`, `out/`, `*.log`, `.env`, `.env.local`, OS/editor junk, Electron build artifacts).
-   - [ ] Update `README.md` with project name, one-line description, and “see plan.md for the development plan”.
+   - [x] Run `pnpm init` in project root (creates `package.json`).
+   - [x] Add `.gitignore` (include: `node_modules/`, `dist/`, `out/`, `*.log`, `.env`, `.env.local`, OS/editor junk, Electron build artifacts).
+   - [x] Update `README.md` with project name, one-line description, and “see plan.md for the development plan”.
 
 2. **Lock stack and map approach**
-   - [ ] In `package.json`, set `"type": "module"` if using ES modules; add `engines` for Node (e.g. `>=20`) and note Windows 11.
-   - [ ] Document stack choice in plan or `docs/stack.md`: **Electron** for Windows desktop; **Windows 11 only**; **MSIX** for installer (e.g. electron-builder MSIX target).
-   - [ ] Document map approach: **flat azimuthal** projection; **bundled default world map** (free source: Natural Earth or small OSM-derived asset); **optional user-triggered caching** from a free tile URL (e.g. OSM) when online. No paid subscriptions or API keys.
+   - [x] In `package.json`, set `"type": "module"` if using ES modules; add `engines` for Node (e.g. `>=20`) and note Windows 11.
+   - [x] Document stack choice in plan or `docs/stack.md`: **Electron** for Windows desktop; **Windows 11 only**; **MSIX** for installer (e.g. electron-builder MSIX target).
+   - [x] Document map approach: **flat azimuthal** projection; **bundled default world map** (free source: Natural Earth or small OSM-derived asset); **optional user-triggered caching** from a free tile URL (e.g. OSM) when online. No paid subscriptions or API keys.
 
 3. **Define location data model and persistence**
-   - [ ] Create a schema doc or TypeScript types for:
+   - [x] Create a schema doc or TypeScript types for:
      - **Saved home:** `id`, `name`, `lat`, `lon`, `magneticDeclination` (optional, number), `notes` (optional). Default home when none exist: Washington DC, White House (38.8977, -77.0365).
      - **Saved target:** `id`, `name`, `lat`, `lon`, `notes` (optional).
      - **App preferences:** e.g. `distanceUnit` (`km` | `nm` | `miles`), `dataFilePath` (optional user-chosen path for JSON file).
-   - [ ] Define single **JSON store**: one file containing `{ schemaVersion: 1, homes: [], targets: [], preferences: {} }`. Document where the file lives by default (e.g. app data dir) and how optional user-chosen path (e.g. OneDrive folder) is applied.
+   - [x] Define single **JSON store**: one file containing `{ schemaVersion: 1, homes: [], targets: [], preferences: {} }`. Document where the file lives by default (e.g. app data dir) and how optional user-chosen path (e.g. OneDrive folder) is applied.
 
 4. **PRD and plan hygiene**
-   - [ ] Create `prd.md` with: product purpose, user stories (e.g. “As a user I can select a home and target and see both path bearings and distances”), and acceptance criteria for v1.
-   - [ ] Ensure `plan.md` remains the single source of truth for the to-do list; check off Phase 0 items as they are done.
-   - [ ] Review Section 6 (Open questions) and add any new TBDs; resolve or defer.
+   - [x] Create `prd.md` with: product purpose, user stories (e.g. “As a user I can select a home and target and see both path bearings and distances”), and acceptance criteria for v1.
+   - [x] Ensure `plan.md` remains the single source of truth for the to-do list; check off Phase 0 items as they are done.
+   - [x] Review Section 6 (Open questions) and add any new TBDs; resolve or defer.
 
 5. **Phase 0 sign-off**
-   - [ ] All Phase 0 checkboxes above and in the detailed steps are checked.
-   - [ ] Repo builds (or will build after Phase 1): `pnpm install` succeeds; no broken references.
+   - [x] All Phase 0 checkboxes above and in the detailed steps are checked.
+   - [x] Repo builds (or will build after Phase 1): `pnpm install` succeeds; no broken references.
 
 ---
 
@@ -157,10 +157,10 @@ Both options must always be presented so the user can choose which direction to 
 - [x] Responsive or fixed layout suitable for Windows (and browser if applicable).
 - [x] **Home selector** — Clear way to choose among saved homes (e.g. dropdown or list); map recenters on selection.
 - [x] **Target selector** — Clear way to choose saved target or add by coords/click; target marker and lines update.
-- [ ] **Map** — Home at center and marked; target marked; great-circle lines visible; labels or legend if needed.
+- [x] **Map** — Home at center and marked; target marked; great-circle lines visible; legend; **country boundaries** and **major cities** (up to 20 in the visible area; zooming shows up to 20 cities in the new area). Cities from bundled Natural Earth 110m data.
 - [x] **Results** — Clear display of **both paths** (short and long): bearing from North (°), direction name, distance in user-selected units (km/nm/miles). If home has magnetic declination: show compass bearing for each path (e.g. “True 85° / Magnetic 82°”).
 - [x] Error and loading states (e.g. geolocation denied, invalid coordinates, no home/target selected).
-- [ ] **Optional:** User-triggered **cache maps** — when online, offer an option (e.g. "Cache maps for this view") that fetches tiles from a **free** source (e.g. OSM) and stores them locally for use when offline. No subscription or payment; user controls when to cache.
+- [ ] **Optional (deferred):** User-triggered **raster tile cache** — when online, offer an option to fetch tiles from a free source (e.g. OSM) and store locally. v1 uses richer bundled vector (countries + cities) instead; no tile caching yet.
 
 **Deliverable:** UI aligned with “functional, warm, intentional” design; home/target selection and both path options easy to use for antenna pointing.
 
@@ -235,6 +235,19 @@ Decide or explicitly defer these so they don’t block or surprise you mid-build
 - **Optional user-triggered caching** — When the user is online, offer an option (e.g. “Cache maps for this area” or “Download map detail”) that fetches tiles from a **free** tile source (e.g. OSM tile server) and caches them locally. Later, when offline, the app can use the cache for better detail where cached. No automatic background fetch required; user controls when to cache.
 
 This gives: no subscriptions, no cost, no requirement to be online to use the software; optional caching for better detail when the user wants it.
+
+**Cached maps and extra detail — options**
+
+1. **Raster tile caching (optional, user-triggered)**  
+   User clicks e.g. “Cache maps for this area”; app fetches raster tiles (e.g. OSM) for the current view (and optionally surrounding zoom levels), saves to local disk or app data. When offline or later, use cached tiles for the basemap or an overlay. **Pros:** Familiar street/terrain detail. **Cons:** Tile storage, cache invalidation, attribution; more implementation work.
+
+2. **Richer bundled vector (no network)**  
+   Ship more vector data with the app: **country boundaries** (e.g. world-atlas `countries-110m`) and **major cities** (e.g. Natural Earth populated places or a curated list). Draw country outlines and up to N cities (e.g. 20) in the current view so zooming in shows more local cities. **Pros:** Offline, no cache layer; countries and city names improve orientation. **Cons:** Bundle size; city labels only (no streets).
+
+3. **Hybrid (future)**  
+   Bundled vector for countries + cities as above; optional raster tile cache on top for extra detail when the user has cached an area.
+
+**Chosen for v1 (Phase 5):** Option 2 — add **countries** and **major cities** to the bundled map. Limit city labels to **20 in the visible area**; when the user zooms (e.g. “Fit path”) the visible area changes and up to 20 cities in the new area are shown. No tile caching in v1.
 
 ---
 

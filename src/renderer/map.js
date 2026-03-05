@@ -1,9 +1,12 @@
 import * as d3 from "d3-geo";
 import { feature } from "topojson-client";
 import land110m from "world-atlas/land-110m.json";
+import countries110m from "world-atlas/countries-110m.json";
 import { paths, longPathPoints, validateDecimalDegrees, magneticBearing, distanceKm } from "../geo.js";
+import majorCities from "../data/major-cities.json" with { type: "json" };
 
 const worldLand = feature(land110m, land110m.objects.land);
+const worldCountries = feature(countries110m, countries110m.objects.countries);
 
 function clearLoadStatus(err) {
   const el = document.getElementById("load-status");
@@ -29,6 +32,7 @@ const KM_PER_MILE = 1.60934;
 
 const MAP_ZOOM_FULL = "full";
 const MAP_ZOOM_FIT_PATH = "fit-path";
+const MAX_CITIES_IN_VIEW = 20;
 
 let state = {
   homes: [DEFAULT_HOME],
@@ -125,6 +129,19 @@ function renderMap() {
     }
   });
 
+  worldCountries.features.forEach((f) => {
+    const d = path(f);
+    if (d) {
+      const countryPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      countryPath.setAttribute("d", d);
+      countryPath.setAttribute("fill", "none");
+      countryPath.setAttribute("stroke", "#4a4540");
+      countryPath.setAttribute("stroke-width", "0.6");
+      countryPath.setAttribute("class", "country-boundary");
+      g.appendChild(countryPath);
+    }
+  });
+
   const graticule = d3.geoGraticule();
   const graticulePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
   graticulePath.setAttribute("d", path(graticule()));
@@ -182,6 +199,38 @@ function renderMap() {
     }
   }
   g.appendChild(pathGroup);
+
+  const cx = width / 2;
+  const cy = height / 2;
+  const viewRadius = Math.min(width, height) / 2;
+  const inView = (c) => {
+    const xy = projection([c.lon, c.lat]);
+    if (!xy.every(Number.isFinite)) return false;
+    return Math.hypot(xy[0] - cx, xy[1] - cy) <= viewRadius;
+  };
+  const visibleCities = majorCities
+    .filter(inView)
+    .sort((a, b) => (b.p || 0) - (a.p || 0))
+    .slice(0, MAX_CITIES_IN_VIEW);
+  const cityGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  cityGroup.setAttribute("class", "map-cities");
+  visibleCities.forEach((c) => {
+    const [x, y] = projection([c.lon, c.lat]);
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("cx", x);
+    dot.setAttribute("cy", y);
+    dot.setAttribute("r", 2);
+    dot.setAttribute("class", "city-dot");
+    cityGroup.appendChild(dot);
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", x + 4);
+    label.setAttribute("y", y + 1);
+    label.setAttribute("class", "city-label");
+    label.setAttribute("font-size", "10");
+    label.textContent = c.n;
+    cityGroup.appendChild(label);
+  });
+  g.appendChild(cityGroup);
 
   const [hx, hy] = projection([home.lon, home.lat]);
   const homeMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
