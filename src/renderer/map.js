@@ -1,0 +1,567 @@
+import * as d3 from "d3-geo";
+import { feature } from "topojson-client";
+import land110m from "world-atlas/land-110m.json";
+import { paths, longPathPoints, validateDecimalDegrees, magneticBearing } from "../geo.js";
+
+const worldLand = feature(land110m, land110m.objects.land);
+
+function clearLoadStatus(err) {
+  const el = document.getElementById("load-status");
+  if (!el) return;
+  if (err) {
+    el.style.color = "#c44";
+    el.textContent = "Error: " + (err.message || String(err));
+    return;
+  }
+  el.remove();
+}
+
+try {
+  clearLoadStatus();
+} catch (e) {
+  clearLoadStatus(e);
+  throw e;
+}
+
+const DEFAULT_HOME = { id: "default-dc", name: "Washington DC, White House", lat: 38.8977, lon: -77.0365 };
+const KM_PER_NM = 1.852;
+const KM_PER_MILE = 1.60934;
+
+let state = {
+  homes: [DEFAULT_HOME],
+  activeHomeId: DEFAULT_HOME.id,
+  targets: [],
+  selectedTargetId: null,
+  targetCoords: null,
+  data: null,
+};
+
+function getActiveHome() {
+  return state.homes.find((h) => h.id === state.activeHomeId) || state.homes[0];
+}
+
+function getCurrentTarget() {
+  if (state.targetCoords) return state.targetCoords;
+  const t = state.targets.find((x) => x.id === state.selectedTargetId);
+  return t ? { lat: t.lat, lon: t.lon } : null;
+}
+
+function distanceInUnit(km, unit) {
+  if (unit === "nm") return km / KM_PER_NM;
+  if (unit === "miles") return km / KM_PER_MILE;
+  return km;
+}
+
+function unitLabel(unit) {
+  return { km: "km", nm: "nm", miles: "mi" }[unit] || "km";
+}
+
+function renderMap() {
+  const home = getActiveHome();
+  const target = getCurrentTarget();
+  const width = document.getElementById("map-container").clientWidth;
+  const height = document.getElementById("map-container").clientHeight;
+  const projection = d3.geoAzimuthalEquidistant().fitSize([width, height], { type: "Sphere" });
+  projection.rotate([-home.lon, -home.lat]);
+  projection.center([0, 0]);
+  const path = d3.geoPath(projection);
+  const svg = document.getElementById("map");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.innerHTML = "";
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  svg.appendChild(g);
+
+  const sphere = { type: "Sphere" };
+  const spherePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  spherePath.setAttribute("d", path(sphere));
+  spherePath.setAttribute("fill", "#1e1c1a");
+  spherePath.setAttribute("stroke", "#3a3632");
+  spherePath.setAttribute("stroke-width", "1");
+  g.appendChild(spherePath);
+
+  worldLand.features.forEach((f) => {
+    const d = path(f);
+    if (d) {
+      const landPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      landPath.setAttribute("d", d);
+      landPath.setAttribute("fill", "#2d2a26");
+      landPath.setAttribute("stroke", "#3a3632");
+      landPath.setAttribute("stroke-width", "0.5");
+      g.appendChild(landPath);
+    }
+  });
+
+  const graticule = d3.geoGraticule();
+  const graticulePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  graticulePath.setAttribute("d", path(graticule()));
+  graticulePath.setAttribute("fill", "none");
+  graticulePath.setAttribute("stroke", "#3a3632");
+  graticulePath.setAttribute("stroke-width", "0.5");
+  g.appendChild(graticulePath);
+
+  const pathGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  pathGroup.setAttribute("fill", "none");
+  if (target && home) {
+    function projectLine(coordinates) {
+      const segments = [];
+      let current = [];
+      for (const [lon, lat] of coordinates) {
+        const xy = projection([lon, lat]);
+        if (xy.every(Number.isFinite)) {
+          current.push(xy);
+        } else {
+          if (current.length >= 2) segments.push(current);
+          current = [];
+        }
+      }
+      if (current.length >= 2) segments.push(current);
+      if (segments.length === 0) return null;
+      return segments
+        .map((pts) => "M" + pts[0].join(",") + "L" + pts.slice(1).map(([x, y]) => `${x},${y}`).join("L"))
+        .join(" ");
+    }
+    const shortLine = d3.geoInterpolate([home.lon, home.lat], [target.lon, target.lat]);
+    const shortPts = [];
+    for (let i = 0; i <= 64; i++) shortPts.push(shortLine(i / 64));
+    const shortD = projectLine(shortPts);
+    if (shortD) {
+      const shortPathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      shortPathEl.setAttribute("d", shortD);
+      shortPathEl.setAttribute("stroke", "#c4a574");
+      shortPathEl.setAttribute("stroke-width", "1.5");
+      shortPathEl.setAttribute("opacity", "0.9");
+      shortPathEl.setAttribute("class", "path-short");
+      pathGroup.appendChild(shortPathEl);
+    }
+
+    const longPts = longPathPoints(home, target, 64);
+    const longD = projectLine(longPts);
+    if (longD) {
+      const longPathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      longPathEl.setAttribute("d", longD);
+      longPathEl.setAttribute("stroke", "#8b7355");
+      longPathEl.setAttribute("stroke-width", "1");
+      longPathEl.setAttribute("stroke-dasharray", "4,2");
+      longPathEl.setAttribute("opacity", "0.8");
+      longPathEl.setAttribute("class", "path-long");
+      pathGroup.appendChild(longPathEl);
+    }
+  }
+  g.appendChild(pathGroup);
+
+  const [hx, hy] = projection([home.lon, home.lat]);
+  const homeMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  homeMarker.setAttribute("cx", hx);
+  homeMarker.setAttribute("cy", hy);
+  homeMarker.setAttribute("r", 8);
+  homeMarker.setAttribute("class", "home-marker");
+  g.appendChild(homeMarker);
+
+  if (target) {
+    const [tx, ty] = projection([target.lon, target.lat]);
+    const targetMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    targetMarker.setAttribute("cx", tx);
+    targetMarker.setAttribute("cy", ty);
+    targetMarker.setAttribute("r", 6);
+    targetMarker.setAttribute("class", "target-marker");
+    g.appendChild(targetMarker);
+  }
+}
+
+const NEW_HOME_VALUE = "__new__";
+const NEW_TARGET_VALUE = "__new__";
+
+function fillHomeForm(home) {
+  const nameEl = document.getElementById("home-name");
+  const latEl = document.getElementById("home-lat");
+  const lonEl = document.getElementById("home-lon");
+  const declEl = document.getElementById("home-decl");
+  if (nameEl) nameEl.value = home.name ?? "";
+  if (latEl) latEl.value = home.lat ?? "";
+  if (lonEl) lonEl.value = home.lon ?? "";
+  if (declEl) declEl.value = home.magneticDeclination != null ? home.magneticDeclination : "";
+}
+
+function clearHomeForm() {
+  fillHomeForm({ name: "", lat: "", lon: "", magneticDeclination: "" });
+}
+
+function syncHomeFormToSelection() {
+  const sel = document.getElementById("home-select");
+  const btn = document.getElementById("home-submit-btn");
+  const delBtn = document.getElementById("delete-home-btn");
+  if (!sel || !btn) return;
+  if (sel.value === NEW_HOME_VALUE || sel.value === "") {
+    clearHomeForm();
+    btn.textContent = "Add home";
+    if (delBtn) delBtn.style.display = "none";
+  } else {
+    const home = state.homes.find((h) => h.id === sel.value);
+    if (home) {
+      fillHomeForm(home);
+      btn.textContent = "Update home";
+      if (delBtn) delBtn.style.display = "block";
+    }
+  }
+}
+
+function renderHomeSelect() {
+  const sel = document.getElementById("home-select");
+  if (!sel) return;
+  sel.innerHTML = "";
+  const newOpt = document.createElement("option");
+  newOpt.value = NEW_HOME_VALUE;
+  newOpt.textContent = "— New home —";
+  sel.appendChild(newOpt);
+  state.homes.forEach((h) => {
+    const opt = document.createElement("option");
+    opt.value = h.id;
+    opt.textContent = h.name;
+    sel.appendChild(opt);
+  });
+  sel.value = state.activeHomeId || state.homes[0]?.id || NEW_HOME_VALUE;
+  syncHomeFormToSelection();
+}
+
+function fillTargetForm(target, nameOverride = "") {
+  const nameEl = document.getElementById("target-name");
+  const latEl = document.getElementById("target-lat");
+  const lonEl = document.getElementById("target-lon");
+  const name = nameOverride !== "" ? nameOverride : (target?.name ?? "");
+  if (nameEl) nameEl.value = name;
+  if (latEl) latEl.value = target?.lat ?? "";
+  if (lonEl) lonEl.value = target?.lon ?? "";
+}
+
+function clearTargetForm() {
+  fillTargetForm(null, "");
+}
+
+function syncTargetFormToSelection() {
+  const sel = document.getElementById("target-select");
+  const btn = document.getElementById("target-submit-btn");
+  const saveBtn = document.getElementById("save-target-btn");
+  const delBtn = document.getElementById("delete-target-btn");
+  if (!btn) return;
+  if (state.targetCoords) {
+    fillTargetForm(state.targetCoords);
+    if (document.getElementById("target-name")) document.getElementById("target-name").value = "";
+    btn.textContent = "Set target";
+    if (saveBtn) saveBtn.style.display = "block";
+    if (delBtn) delBtn.style.display = "none";
+  } else if (sel?.value === NEW_TARGET_VALUE || (!state.selectedTargetId && !state.targetCoords)) {
+    clearTargetForm();
+    btn.textContent = "Add target";
+    if (saveBtn) saveBtn.style.display = "none";
+    if (delBtn) delBtn.style.display = "none";
+  } else if (state.selectedTargetId) {
+    const t = state.targets.find((x) => x.id === state.selectedTargetId);
+    if (t) {
+      fillTargetForm(t);
+      btn.textContent = "Update target";
+    }
+    if (saveBtn) saveBtn.style.display = "none";
+    if (delBtn) delBtn.style.display = "block";
+  } else {
+    clearTargetForm();
+    btn.textContent = "Set target";
+    if (saveBtn) saveBtn.style.display = "none";
+    if (delBtn) delBtn.style.display = "none";
+  }
+}
+
+function renderTargetSelect() {
+  const sel = document.getElementById("target-select");
+  if (!sel) return;
+  sel.innerHTML = "";
+  const addOpt = (value, label) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  };
+  addOpt(NEW_TARGET_VALUE, "— New target —");
+  if (state.targetCoords) {
+    addOpt("__custom__", "— Custom coords —");
+  }
+  state.targets.forEach((t) => {
+    addOpt(t.id, t.name);
+  });
+  const want = state.targetCoords ? "__custom__" : (state.selectedTargetId || NEW_TARGET_VALUE);
+  sel.value = want;
+  syncTargetFormToSelection();
+}
+
+function renderResults() {
+  const home = getActiveHome();
+  const target = getCurrentTarget();
+  const unit = (state.data?.preferences?.distanceUnit) || "km";
+  const content = document.getElementById("results-content");
+  const unitSelect = document.getElementById("distance-unit");
+  if (unitSelect) unitSelect.value = unit;
+
+  if (!target) {
+    content.innerHTML = "Set a target (coords or list) to see paths.";
+    return;
+  }
+
+  const result = paths(home, target);
+  const decl = home.magneticDeclination != null ? home.magneticDeclination : null;
+
+  function line(shortOrLong) {
+    const r = result[shortOrLong];
+    const dist = distanceInUnit(r.distanceKm, unit);
+    const label = shortOrLong === "short" ? "Short path" : "Long path";
+    let text = `${label}: ${r.bearing.toFixed(1)}° ${r.direction} — ${dist.toFixed(1)} ${unitLabel(unit)}`;
+    if (decl != null) {
+      const mag = magneticBearing(r.bearing, decl);
+      text += ` (True ${r.bearing.toFixed(0)}° / Magnetic ${mag.toFixed(0)}°)`;
+    }
+    return text;
+  }
+
+  content.innerHTML = `<div class="path-row">${line("short")}</div><div class="path-row">${line("long")}</div>`;
+}
+
+async function persist() {
+  if (!window.azimuth || !state.data) return;
+  state.data.homes = state.homes;
+  state.data.targets = state.targets;
+  state.data.preferences = state.data.preferences || {};
+  state.data.preferences.distanceUnit = document.getElementById("distance-unit")?.value || "km";
+  await window.azimuth.saveData(state.data);
+}
+
+async function loadAndRender() {
+  if (!window.azimuth) {
+    renderHomeSelect();
+    renderTargetSelect();
+    renderMap();
+    renderResults();
+    return;
+  }
+  try {
+    const data = await window.azimuth.loadData();
+    state.data = data;
+    state.homes = data.homes?.length ? data.homes : [DEFAULT_HOME];
+    state.targets = data.targets || [];
+    if (!state.homes.find((h) => h.id === state.activeHomeId)) state.activeHomeId = state.homes[0].id;
+    const unit = data.preferences?.distanceUnit || "km";
+    if (data.preferences) state.data.preferences = data.preferences;
+    renderHomeSelect();
+    renderTargetSelect();
+    renderMap();
+    renderResults();
+  } catch (e) {
+    state.homes = [DEFAULT_HOME];
+    state.targets = [];
+    state.activeHomeId = DEFAULT_HOME.id;
+    state.selectedTargetId = null;
+    state.targetCoords = null;
+    renderHomeSelect();
+    renderTargetSelect();
+    renderMap();
+    renderResults();
+  }
+}
+
+window.addEventListener("resize", () => {
+  if (getActiveHome()) renderMap();
+});
+
+document.getElementById("add-home")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const sel = document.getElementById("home-select");
+  const name = document.getElementById("home-name").value.trim();
+  const lat = Number(document.getElementById("home-lat").value);
+  const lon = Number(document.getElementById("home-lon").value);
+  const valid = validateDecimalDegrees(lat, lon);
+  if (!name || !valid) return;
+  const decl = document.getElementById("home-decl").value ? Number(document.getElementById("home-decl").value) : null;
+  const isUpdate = sel?.value && sel.value !== NEW_HOME_VALUE;
+  if (isUpdate) {
+    const home = state.homes.find((h) => h.id === sel.value);
+    if (home) {
+      home.name = name;
+      home.lat = valid.lat;
+      home.lon = valid.lon;
+      home.magneticDeclination = decl ?? null;
+      if (window.azimuth && state.data) {
+        state.data.homes = state.homes;
+        await window.azimuth.saveData(state.data);
+      }
+      renderHomeSelect();
+      syncHomeFormToSelection();
+      renderMap();
+      renderResults();
+    }
+  } else {
+    const id = "home-" + Date.now();
+    const home = { id, name, lat: valid.lat, lon: valid.lon, magneticDeclination: decl, notes: "" };
+    state.homes = [...(state.homes || []), home];
+    state.activeHomeId = id;
+    if (window.azimuth && state.data) {
+      state.data.homes = state.homes;
+      await window.azimuth.saveData(state.data);
+    }
+    renderHomeSelect();
+    syncHomeFormToSelection();
+    renderMap();
+    renderResults();
+  }
+});
+
+document.getElementById("set-target")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const sel = document.getElementById("target-select");
+  const name = document.getElementById("target-name")?.value?.trim() ?? "";
+  const lat = Number(document.getElementById("target-lat").value);
+  const lon = Number(document.getElementById("target-lon").value);
+  const valid = validateDecimalDegrees(lat, lon);
+  if (!valid) return;
+  if (sel?.value === NEW_TARGET_VALUE) {
+    const targetName = name || "Unnamed target";
+    const id = "target-" + Date.now();
+    const t = { id, name: targetName, lat: valid.lat, lon: valid.lon, notes: "" };
+    state.targets = [...(state.targets || []), t];
+    state.targetCoords = null;
+    state.selectedTargetId = id;
+    if (window.azimuth && state.data) {
+      state.data.targets = state.targets;
+      await window.azimuth.saveData(state.data);
+    }
+    renderTargetSelect();
+    renderMap();
+    renderResults();
+  } else if (state.selectedTargetId && !state.targetCoords) {
+    const t = state.targets.find((x) => x.id === state.selectedTargetId);
+    if (t) {
+      t.name = name || t.name;
+      t.lat = valid.lat;
+      t.lon = valid.lon;
+      if (window.azimuth && state.data) {
+        state.data.targets = state.targets;
+        await window.azimuth.saveData(state.data);
+      }
+      renderTargetSelect();
+      renderMap();
+      renderResults();
+    }
+  } else {
+    state.targetCoords = valid;
+    state.selectedTargetId = null;
+    renderTargetSelect();
+    renderMap();
+    renderResults();
+    document.getElementById("save-target-btn").style.display = "block";
+  }
+});
+
+document.getElementById("save-target-btn")?.addEventListener("click", async () => {
+  const target = getCurrentTarget();
+  if (!target) return;
+  const nameInput = document.getElementById("target-name");
+  let name = nameInput?.value?.trim();
+  if (!name) name = window.prompt("Target name");
+  if (!name?.trim()) return;
+  const id = "target-" + Date.now();
+  const t = { id, name: name.trim(), lat: target.lat, lon: target.lon, notes: "" };
+  state.targets = [...(state.targets || []), t];
+  state.targetCoords = null;
+  state.selectedTargetId = id;
+  if (window.azimuth && state.data) {
+    state.data.targets = state.targets;
+    await window.azimuth.saveData(state.data);
+  }
+  if (nameInput) nameInput.value = "";
+  renderTargetSelect();
+  renderMap();
+  renderResults();
+  document.getElementById("save-target-btn").style.display = "none";
+});
+
+document.getElementById("distance-unit")?.addEventListener("change", async (e) => {
+  const unit = e.target.value;
+  if (state.data) {
+    state.data.preferences = state.data.preferences || {};
+    state.data.preferences.distanceUnit = unit;
+    await persist();
+  }
+  renderResults();
+});
+
+document.getElementById("home-select")?.addEventListener("change", (e) => {
+  const id = e.target.value;
+  if (id === NEW_HOME_VALUE || id === "") {
+    syncHomeFormToSelection();
+    return;
+  }
+  state.activeHomeId = id;
+  syncHomeFormToSelection();
+  renderMap();
+  renderResults();
+});
+
+document.getElementById("target-select")?.addEventListener("change", (e) => {
+  const id = e.target.value;
+  if (id === "__custom__") {
+    syncTargetFormToSelection();
+    renderMap();
+    renderResults();
+    return;
+  }
+  if (id === NEW_TARGET_VALUE || id === "") {
+    state.targetCoords = null;
+    state.selectedTargetId = null;
+    syncTargetFormToSelection();
+    renderMap();
+    renderResults();
+    return;
+  }
+  state.targetCoords = null;
+  state.selectedTargetId = id;
+  syncTargetFormToSelection();
+  renderMap();
+  renderResults();
+});
+
+document.getElementById("delete-home-btn")?.addEventListener("click", async () => {
+  const sel = document.getElementById("home-select");
+  const id = sel?.value;
+  if (!id || id === NEW_HOME_VALUE) return;
+  const idx = state.homes.findIndex((h) => h.id === id);
+  if (idx === -1) return;
+  state.homes = state.homes.filter((h) => h.id !== id);
+  if (state.homes.length === 0) {
+    state.homes = [DEFAULT_HOME];
+    state.activeHomeId = DEFAULT_HOME.id;
+  } else if (state.activeHomeId === id) {
+    state.activeHomeId = state.homes[0].id;
+  }
+  if (window.azimuth && state.data) {
+    state.data.homes = state.homes;
+    await window.azimuth.saveData(state.data);
+  }
+  renderHomeSelect();
+  syncHomeFormToSelection();
+  renderMap();
+  renderResults();
+});
+
+document.getElementById("delete-target-btn")?.addEventListener("click", async () => {
+  const id = state.selectedTargetId;
+  if (!id) return;
+  state.targets = state.targets.filter((t) => t.id !== id);
+  state.selectedTargetId = state.targets[0]?.id ?? null;
+  if (window.azimuth && state.data) {
+    state.data.targets = state.targets;
+    await window.azimuth.saveData(state.data);
+  }
+  renderTargetSelect();
+  renderMap();
+  renderResults();
+});
+
+loadAndRender().catch((e) => clearLoadStatus(e));

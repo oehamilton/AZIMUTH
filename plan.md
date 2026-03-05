@@ -107,37 +107,37 @@ Both options must always be presented so the user can choose which direction to 
 ---
 
 ### Phase 1 — Core math and logic (no UI)
-- [ ] Implement geodetic utilities (e.g. WGS84):
+- [x] Implement geodetic utilities (e.g. WGS84):
   - **Short path (minor arc):** forward bearing from A to B, and distance (e.g. Haversine or Vincenty).
   - **Long path (major arc):** bearing from A toward B the “other way” around the globe, and distance = (Earth circumference − short distance).
   - Direction label (N, NE, E, …) from degrees for each path.
-- [ ] API returns both paths: e.g. `{ short: { bearing°, direction, distanceKm }, long: { bearing°, direction, distanceKm } }`.
-- [ ] Add unit tests for both paths (e.g. Lake Charles → Tehran: short ~E and long ~W/N; poles; antipodal; same point).
-- [ ] No UI in this phase; pure functions/modules.
+- [x] API returns both paths: e.g. `{ short: { bearing°, direction, distanceKm }, long: { bearing°, direction, distanceKm } }`.
+- [x] Add unit tests for both paths (e.g. Lake Charles → Tehran: short ~E and long ~W/N; poles; antipodal; same point).
+- [x] No UI in this phase; pure functions/modules.
 
 **Deliverable:** Tested library that returns short-path and long-path bearing (from North), direction, and distance. All tests passing.
 
 ---
 
 ### Phase 2 — Home-centric globe map and homes
-- [ ] Integrate map library; show world map in **flat azimuthal** projection (e.g. orthographic), great-circle style. Use **bundled default world map** (free source; no network required) so the app works offline from first launch.
-- [ ] **Home at center** — Map is centered on the selected home; selected home is **always marked** on the map (e.g. pin or distinct symbol).
-- [ ] Support at least one home: **manual entry** of coordinates is primary. If no homes exist, use **default home** (Washington DC, White House: 38.8977 N, 77.0365 W) so the map has a center. If device location is available (e.g. Windows location), offer it as an **option** to save as a home — not required.
-- [ ] **Stored home locations** — User can save multiple homes (name, lat, lon); select which home is “active”; when selection changes, map recenters on that home and updates the marker. **Magnetic declination** — optional field per home (degrees, e.g. +E / −W convention); user can view and edit when adding or editing a home. Persist list **locally** (local file or app data; optional user-chosen path e.g. OneDrive).
-- [ ] Add e2e test: load app → map visible, centered on home → home marked; add/select different home → map recenters.
+- [x] Integrate map library; show world map in **flat azimuthal** projection (e.g. orthographic), great-circle style. Use **bundled default world map** (free source; no network required) so the app works offline from first launch.
+- [x] **Home at center** — Map is centered on the selected home; selected home is **always marked** on the map (e.g. pin or distinct symbol).
+- [x] Support at least one home: **manual entry** of coordinates is primary. If no homes exist, use **default home** (Washington DC, White House: 38.8977 N, 77.0365 W) so the map has a center. If device location is available (e.g. Windows location), offer it as an **option** to save as a home — not required.
+- [x] **Stored home locations** — User can save multiple homes (name, lat, lon); select which home is “active”; when selection changes, map recenters on that home and updates the marker. **Magnetic declination** — optional field per home (degrees, e.g. +E / −W convention); user can view and edit when adding or editing a home. Persist list **locally** (local file or app data; optional user-chosen path e.g. OneDrive).
+- [x] Add e2e test: load app → map visible, centered on home → home marked; add/select different home → map recenters.
 
 **Deliverable:** Globe map with selected home always in center and marked; multiple homes can be saved and selected.
 
 ---
 
 ### Phase 3 — Target by coordinates and stored targets
-- [ ] Input for target latitude/longitude (validation, **decimal degrees only**); **or** select a **saved target** from a list.
-- [ ] **Stored target locations** — User can save targets (name, lat, lon); select target from list or add new by coords. Persist list **locally** (same store as homes; optional user-chosen path e.g. OneDrive).
-- [ ] On home + target set: compute **both** short path and long path (from **selected home** to target) using Phase 1 logic.
-- [ ] **Map:** Selected target is **indicated on the map** (marker). Draw **great-circle lines** from home to target (short path and long path) for a clear visual.
-- [ ] Display **all options**: for each path show bearing from North (°), direction name, and distance in **user-selected units** (km / nm / miles; persist preference). Clearly label “Short path” and “Long path”. When the selected home has **magnetic declination** set, also show **compass (magnetic) bearing** for each path (true bearing ± declination).
-- [ ] Unit tests for validation and integration with core math (both paths); test magnetic bearing when declination is set.
-- [ ] E2e test: select home, enter valid target coords (or pick saved target) → target marked, lines drawn, both paths show correct bearing/direction/distance.
+- [x] Input for target latitude/longitude (validation, **decimal degrees only**); **or** select a **saved target** from a list.
+- [x] **Stored target locations** — User can save targets (name, lat, lon); select target from list or add new by coords. Persist list **locally** (same store as homes; optional user-chosen path e.g. OneDrive).
+- [x] On home + target set: compute **both** short path and long path (from **selected home** to target) using Phase 1 logic.
+- [x] **Map:** Selected target is **indicated on the map** (marker). Draw **great-circle lines** from home to target (short path and long path) for a clear visual.
+- [x] Display **all options**: for each path show bearing from North (°), direction name, and distance in **user-selected units** (km / nm / miles; persist preference). Clearly label “Short path” and “Long path”. When the selected home has **magnetic declination** set, also show **compass (magnetic) bearing** for each path (true bearing ± declination).
+- [x] Unit tests for validation and integration with core math (both paths); test magnetic bearing when declination is set.
+- [x] E2e test: select home, enter valid target coords (or pick saved target) → target marked, lines drawn, both paths show correct bearing/direction/distance.
 
 **Deliverable:** User can set target by coordinates or from saved list; map shows home (center), target (marker), great-circle lines, and numeric bearing/distance for both paths.
 

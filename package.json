@@ -4,9 +4,13 @@
   "description": "Antenna pointing: bearing and distance from home to target (short and long path). Windows 11, Electron, offline-first maps.",
   "private": true,
   "type": "module",
+  "main": "src/main/electron-main.js",
   "scripts": {
-    "test": "node --test",
-    "start": "echo 'Not yet implemented'"
+    "test": "node --test test/geo.test.js",
+    "test:results": "node scripts/write-test-results.js",
+    "build:renderer": "node scripts/build-renderer.js",
+    "start": "pnpm run build:renderer && electron .",
+    "e2e": "node test/e2e/run-e2e.js"
   },
   "engines": {
     "node": ">=20"
@@ -19,5 +23,14 @@
     "RF"
   ],
   "author": "",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "esbuild": "^0.24.0",
+    "world-atlas": "^2.0.2"
+  },
+  "dependencies": {
+    "d3-geo": "^3.1.0",
+    "topojson-client": "^3.1.0"
+  }
 }

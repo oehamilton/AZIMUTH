@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AZIMUTH</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #1a1a1a; color: #e8e0d5; }
+    #app { display: flex; height: 100vh; }
+    #sidebar { width: 300px; padding: 1rem; background: #252220; border-right: 1px solid #3a3632; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+    #sidebar h2 { margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #c4b8a8; }
+    .list { list-style: none; padding: 0; margin: 0; }
+    .list li { padding: 0.5rem 0.75rem; margin-bottom: 0.25rem; background: #2e2a26; border-radius: 6px; cursor: pointer; }
+    .list li:hover { background: #3a3632; }
+    .list li.active { outline: 2px solid #c4a574; }
+    form.side-form { display: flex; flex-direction: column; gap: 0.4rem; }
+    form.side-form input { padding: 0.4rem; background: #2e2a26; border: 1px solid #3a3632; border-radius: 4px; color: #e8e0d5; }
+    form.side-form button { padding: 0.5rem; background: #c4a574; color: #1a1a1a; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-danger { padding: 0.4rem; background: #5c3a38; color: #e8c0b8; border: 1px solid #7a4a45; border-radius: 4px; cursor: pointer; }
+    .btn-danger:hover { background: #6d4542; }
+    #results { background: #2e2a26; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; }
+    #results .path-row { margin-bottom: 0.5rem; }
+    #results .path-label { font-weight: 600; color: #c4a574; }
+    #results .unit-select { margin-bottom: 0.5rem; }
+    #results select { background: #1a1a1a; color: #e8e0d5; border: 1px solid #3a3632; padding: 0.3rem; border-radius: 4px; }
+    .dropdown-label { display: block; font-size: 0.8rem; color: #9a8f82; margin-bottom: 0.25rem; }
+    .sidebar-select { width: 100%; padding: 0.5rem; background: #2e2a26; color: #e8e0d5; border: 1px solid #3a3632; border-radius: 4px; margin-bottom: 0.5rem; }
+    #map-container { flex: 1; position: relative; }
+    #map { width: 100%; height: 100%; background: #0f0e0d; }
+    .home-marker { fill: #c4a574; stroke: #1a1a1a; stroke-width: 2; }
+    .target-marker { fill: #a67c52; stroke: #1a1a1a; stroke-width: 2; }
+    .path-short { fill: none; stroke: #c4a574; stroke-width: 1.5; opacity: 0.9; }
+    .path-long { fill: none; stroke: #8b7355; stroke-width: 1; stroke-dasharray: 4,2; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <div id="load-status" style="position:fixed;top:0;left:0;right:0;padding:0.5rem;background:#252220;color:#c4a574;font-size:0.9rem;z-index:9999;">Loading…</div>
+  <div id="app">
+    <aside id="sidebar">
+      <section>
+        <h2>Homes</h2>
+        <label class="dropdown-label">Current home</label>
+        <select id="home-select" class="sidebar-select" aria-label="Select saved home"></select>
+        <form id="add-home" class="side-form" style="margin-top: 0.5rem;">
+          <input type="text" id="home-name" placeholder="Name" required />
+          <input type="number" id="home-lat" placeholder="Lat (decimal)" step="any" required />
+          <input type="number" id="home-lon" placeholder="Lon (decimal)" step="any" required />
+          <input type="number" id="home-decl" placeholder="Mag decl (°)" step="any" />
+          <button type="submit" id="home-submit-btn">Add home</button>
+        </form>
+        <button type="button" id="delete-home-btn" class="btn-danger" style="margin-top: 0.25rem; display: none;">Delete home</button>
+      </section>
+      <section>
+        <h2>Targets</h2>
+        <label class="dropdown-label">Current target</label>
+        <select id="target-select" class="sidebar-select" aria-label="Select saved target"></select>
+        <form id="set-target" class="side-form" style="margin-top: 0.5rem;">
+          <input type="text" id="target-name" placeholder="Target name (optional)" />
+          <input type="number" id="target-lat" placeholder="Lat (decimal)" step="any" />
+          <input type="number" id="target-lon" placeholder="Lon (decimal)" step="any" />
+          <button type="submit" id="target-submit-btn">Set target</button>
+        </form>
+        <button type="button" id="save-target-btn" style="margin-top: 0.25rem; padding: 0.4rem; background: #3a3632; color: #e8e0d5; border: none; border-radius: 4px; cursor: pointer; display: none;">Save as target</button>
+        <button type="button" id="delete-target-btn" class="btn-danger" style="margin-top: 0.25rem; display: none;">Delete target</button>
+      </section>
+      <section id="results">
+        <div class="unit-select">Distance: <select id="distance-unit"><option value="km">km</option><option value="nm">nm</option><option value="miles">miles</option></select></div>
+        <div id="results-content">Set a home and target to see paths.</div>
+      </section>
+    </aside>
+    <div id="map-container">
+      <svg id="map"></svg>
+    </div>
+  </div>
+  <script src="map.js"></script>
+</body>
+</html>
