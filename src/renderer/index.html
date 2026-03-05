@@ -38,9 +38,17 @@
     #results { background: var(--bg-card); padding: 1rem; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--border); }
     #results .unit-select { margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted); }
     #results .unit-select select { background: var(--bg-app); color: var(--text); border: 1px solid var(--border); padding: 0.35rem 0.5rem; border-radius: 4px; margin-left: 0.25rem; }
+    #results .antenna-select { margin-bottom: 0.75rem; font-size: 0.85rem; }
+    #results .antenna-select label { display: inline-flex; align-items: center; gap: 0.35rem; margin-right: 1rem; cursor: pointer; color: var(--text); }
+    #results .antenna-select input[type="radio"] { accent-color: var(--accent); }
     #results .path-block { margin-bottom: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
     #results .path-block:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-    #results .path-label { font-weight: 600; color: var(--accent); margin-bottom: 0.2rem; }
+    #results .path-label-row { position: relative; display: inline-flex; align-items: center; gap: 0.25rem; margin-bottom: 0.2rem; }
+    #results .path-label { font-weight: 600; color: var(--accent); }
+    #results .results-info { display: inline-flex; align-items: center; justify-content: center; width: 0.95rem; height: 0.95rem; border-radius: 50%; border: 1px solid var(--text-muted); color: var(--text-muted); font-size: 0.65rem; font-weight: 700; font-style: italic; cursor: help; flex-shrink: 0; }
+    #results .results-info:hover { color: var(--accent); border-color: var(--accent); }
+    #results .results-popup { position: absolute; top: calc(100% + 0.35rem); left: 0; width: 240px; padding: 0.5rem 0.6rem; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; line-height: 1.4; color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.4); opacity: 0; visibility: hidden; transition: opacity 0.15s, visibility 0.15s; pointer-events: none; z-index: 30; white-space: normal; }
+    #results .path-label-row:hover .results-popup { opacity: 1; visibility: visible; }
     #results .path-detail { color: var(--text); font-size: 0.85rem; }
     #results .path-detail .magnetic { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.15rem; }
     .sidebar-error { font-size: 0.8rem; color: var(--danger-text); margin-top: 0.35rem; padding: 0.35rem; background: rgba(92,58,56,0.3); border-radius: 4px; display: none; }
@@ -48,13 +56,18 @@
     .sidebar-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
     #map-container { flex: 1; position: relative; cursor: crosshair; min-width: 320px; }
     #map { width: 100%; height: 100%; background: #0f0e0d; display: block; }
-    #map-legend { position: absolute; bottom: 0.75rem; left: 0.75rem; z-index: 10; pointer-events: none; background: rgba(37,34,32,0.92); color: var(--text); font-size: 0.75rem; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); }
+    #map-legend { position: absolute; bottom: 0.75rem; left: 0.75rem; z-index: 10; pointer-events: auto; background: rgba(37,34,32,0.92); color: var(--text); font-size: 0.75rem; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); }
     .map-controls { position: absolute; top: 0.75rem; left: 0.75rem; display: flex; gap: 0.35rem; z-index: 10; pointer-events: auto; }
     .map-controls button { padding: 0.4rem 0.6rem; background: rgba(37,34,32,0.92); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
     .map-controls button:hover { background: var(--bg-card); }
     .map-controls button.active { background: var(--accent); color: var(--bg-app); border-color: var(--accent); }
     #map-legend span { margin-right: 0.75rem; white-space: nowrap; }
     #map-legend .leg-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.25rem; vertical-align: middle; }
+    #map-legend .legend-row { position: relative; pointer-events: auto; margin-right: 0.75rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.2rem; }
+    #map-legend .legend-info { display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem; border-radius: 50%; border: 1px solid var(--text-muted); color: var(--text-muted); font-size: 0.65rem; font-weight: 700; font-style: italic; cursor: help; flex-shrink: 0; }
+    #map-legend .legend-info:hover { color: var(--accent); border-color: var(--accent); }
+    #map-legend .legend-popup { position: absolute; bottom: calc(100% + 0.5rem); left: 0; width: 220px; padding: 0.5rem 0.6rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; font-size: 0.7rem; line-height: 1.4; color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.4); opacity: 0; visibility: hidden; transition: opacity 0.15s, visibility 0.15s; pointer-events: none; z-index: 20; white-space: normal; }
+    #map-legend .legend-row:hover .legend-popup { opacity: 1; visibility: visible; }
     #map-legend .leg-dot.home { background: var(--color-home); }
     #map-legend .leg-dot.target { background: var(--color-target); }
     #homes-section { border: 1px solid var(--color-home); border-radius: 8px; padding: 0.75rem; }
@@ -73,6 +86,10 @@
     <aside id="sidebar">
       <section id="results">
         <div class="unit-select">Distance: <select id="distance-unit"><option value="km">km</option><option value="nm">nm</option><option value="miles">miles</option></select></div>
+        <div class="antenna-select" role="radiogroup" aria-label="Antenna type">
+          <label><input type="radio" name="antenna-type" value="yagi" checked /> Yagi</label>
+          <label><input type="radio" name="antenna-type" value="endfed" /> End-fed</label>
+        </div>
         <div id="results-content">Set a home and target to see paths.</div>
       </section>
       <section id="homes-section">
@@ -115,8 +132,16 @@
       <div id="map-legend" aria-hidden="true">
         <span><span class="leg-dot home"></span> Home</span>
         <span><span class="leg-dot target"></span> Target</span>
-        <span>— Great-Circle</span>
-        <span>- - Loxodrome</span>
+        <span class="legend-row">
+          — Great-Circle
+          <span class="legend-info" aria-label="Great-Circle description">i</span>
+          <span class="legend-popup">The shortest path between two points on the globe (an arc of a great circle). Distance and bearing shown are for this path.</span>
+        </span>
+        <span class="legend-row">
+          - - Loxodrome
+          <span class="legend-info" aria-label="Loxodrome description">i</span>
+          <span class="legend-popup">A path of constant compass bearing (rhumb line). Longer than the great circle but easier to follow by keeping a fixed heading.</span>
+        </span>
       </div>
     </div>
   </div>

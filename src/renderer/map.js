@@ -2,7 +2,7 @@ import * as d3 from "d3-geo";
 import { feature } from "topojson-client";
 import land110m from "world-atlas/land-110m.json";
 import countries110m from "world-atlas/countries-110m.json";
-import { paths, loxodromePoints, loxodromePath, validateDecimalDegrees, magneticBearing, distanceKm } from "../geo.js";
+import { paths, loxodromePoints, loxodromePath, validateDecimalDegrees, magneticBearing, distanceKm, directionFromDegrees } from "../geo.js";
 import majorCities from "../data/major-cities.json" with { type: "json" };
 
 const worldLand = feature(land110m, land110m.objects.land);
@@ -402,14 +402,24 @@ function clearSidebarError() {
   el.classList.remove("visible");
 }
 
+function getAntennaType() {
+  const radio = document.querySelector('input[name="antenna-type"]:checked');
+  return (radio && radio.value === "endfed") ? "endfed" : "yagi";
+}
+
 function renderResults() {
   const home = getActiveHome();
   const target = getCurrentTarget();
   const unit = (state.data?.preferences?.distanceUnit) || "km";
+  const antennaType = state.data?.preferences?.antennaType ?? getAntennaType();
   const content = document.getElementById("results-content");
   const unitSelect = document.getElementById("distance-unit");
   const targetHint = document.getElementById("target-hint");
+  const antennaYagi = document.querySelector('input[name="antenna-type"][value="yagi"]');
+  const antennaEndfed = document.querySelector('input[name="antenna-type"][value="endfed"]');
   if (unitSelect) unitSelect.value = unit;
+  if (antennaYagi) antennaYagi.checked = antennaType === "yagi";
+  if (antennaEndfed) antennaEndfed.checked = antennaType === "endfed";
   if (targetHint) targetHint.style.visibility = target ? "hidden" : "visible";
 
   if (!target) {
@@ -421,16 +431,31 @@ function renderResults() {
   const loxo = loxodromePath(home, target);
   const decl = home.magneticDeclination != null ? home.magneticDeclination : null;
   const unitLbl = unitLabel(unit);
+  const isEndFed = antennaType === "endfed";
+
+  const pathPopups = {
+    "Great-Circle": "The shortest path between two points on the globe (an arc of a great circle). Distance and bearing shown are for this path.",
+    "Loxodrome": "A path of constant compass bearing (rhumb line). Longer than the great circle but easier to follow by keeping a fixed heading.",
+  };
 
   function pathBlock(label, r) {
     const dist = distanceInUnit(r.distanceKm, unit);
-    let detail = `${r.bearing.toFixed(1)}° ${r.direction} — ${dist.toFixed(1)} ${unitLbl}`;
+    let displayBearing = r.bearing;
+    let displayDirection = r.direction;
+    let bearingLabel = "";
+    if (isEndFed) {
+      displayBearing = (r.bearing - 90 + 360) % 360;
+      displayDirection = directionFromDegrees(displayBearing);
+      bearingLabel = " (wire)";
+    }
+    let detail = `${displayBearing.toFixed(1)}° ${displayDirection}${bearingLabel} — ${dist.toFixed(1)} ${unitLbl}`;
     let magnetic = "";
     if (decl != null) {
-      const mag = magneticBearing(r.bearing, decl);
-      magnetic = `True ${r.bearing.toFixed(0)}° / Magnetic ${mag.toFixed(0)}°`;
+      const mag = magneticBearing(displayBearing, decl);
+      magnetic = `True ${displayBearing.toFixed(0)}° / Magnetic ${mag.toFixed(0)}°`;
     }
-    return `<div class="path-block"><div class="path-label">${label}</div><div class="path-detail">${detail}${magnetic ? `<div class="magnetic">${magnetic}</div>` : ""}</div></div>`;
+    const popupText = pathPopups[label] || "";
+    return `<div class="path-block"><div class="path-label-row"><span class="path-label">${label}</span><span class="results-info" aria-label="${label} description">i</span><span class="results-popup">${popupText}</span></div><div class="path-detail">${detail}${magnetic ? `<div class="magnetic">${magnetic}</div>` : ""}</div></div>`;
   }
 
   content.innerHTML = pathBlock("Great-Circle", result.short) + pathBlock("Loxodrome", loxo);
@@ -442,6 +467,7 @@ async function persist() {
   state.data.targets = state.targets;
   state.data.preferences = state.data.preferences || {};
   state.data.preferences.distanceUnit = document.getElementById("distance-unit")?.value || "km";
+  state.data.preferences.antennaType = getAntennaType();
   await window.azimuth.saveData(state.data);
 }
 
@@ -612,6 +638,17 @@ document.getElementById("distance-unit")?.addEventListener("change", async (e) =
     await persist();
   }
   renderResults();
+});
+
+document.querySelectorAll('input[name="antenna-type"]').forEach((radio) => {
+  radio.addEventListener("change", async () => {
+    if (state.data) {
+      state.data.preferences = state.data.preferences || {};
+      state.data.preferences.antennaType = getAntennaType();
+      await persist();
+    }
+    renderResults();
+  });
 });
 
 document.getElementById("home-select")?.addEventListener("change", (e) => {
