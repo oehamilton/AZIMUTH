@@ -56,14 +56,23 @@ function unitLabel(unit) {
   return { km: "km", nm: "nm", miles: "mi" }[unit] || "km";
 }
 
+function getProjection() {
+  const home = getActiveHome();
+  const container = document.getElementById("map-container");
+  const width = container?.clientWidth || 400;
+  const height = container?.clientHeight || 300;
+  const projection = d3.geoAzimuthalEquidistant().fitSize([width, height], { type: "Sphere" });
+  projection.rotate([-home.lon, -home.lat]);
+  projection.center([0, 0]);
+  return projection;
+}
+
 function renderMap() {
   const home = getActiveHome();
   const target = getCurrentTarget();
   const width = document.getElementById("map-container").clientWidth;
   const height = document.getElementById("map-container").clientHeight;
-  const projection = d3.geoAzimuthalEquidistant().fitSize([width, height], { type: "Sphere" });
-  projection.rotate([-home.lon, -home.lat]);
-  projection.center([0, 0]);
+  const projection = getProjection();
   const path = d3.geoPath(projection);
   const svg = document.getElementById("map");
   svg.setAttribute("width", width);
@@ -294,35 +303,53 @@ function renderTargetSelect() {
   syncTargetFormToSelection();
 }
 
+function showSidebarError(message) {
+  const el = document.getElementById("sidebar-error");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add("visible");
+}
+
+function clearSidebarError() {
+  const el = document.getElementById("sidebar-error");
+  if (!el) return;
+  el.textContent = "";
+  el.classList.remove("visible");
+}
+
 function renderResults() {
   const home = getActiveHome();
   const target = getCurrentTarget();
   const unit = (state.data?.preferences?.distanceUnit) || "km";
   const content = document.getElementById("results-content");
   const unitSelect = document.getElementById("distance-unit");
+  const targetHint = document.getElementById("target-hint");
   if (unitSelect) unitSelect.value = unit;
+  if (targetHint) targetHint.style.visibility = target ? "hidden" : "visible";
 
   if (!target) {
-    content.innerHTML = "Set a target (coords or list) to see paths.";
+    content.innerHTML = "<p class=\"path-detail\" style=\"color: var(--text-muted);\">Set a target by coordinates, map click, or saved list to see both paths.</p>";
     return;
   }
 
   const result = paths(home, target);
   const decl = home.magneticDeclination != null ? home.magneticDeclination : null;
+  const unitLbl = unitLabel(unit);
 
-  function line(shortOrLong) {
+  function pathBlock(shortOrLong) {
     const r = result[shortOrLong];
     const dist = distanceInUnit(r.distanceKm, unit);
     const label = shortOrLong === "short" ? "Short path" : "Long path";
-    let text = `${label}: ${r.bearing.toFixed(1)}° ${r.direction} — ${dist.toFixed(1)} ${unitLabel(unit)}`;
+    let detail = `${r.bearing.toFixed(1)}° ${r.direction} — ${dist.toFixed(1)} ${unitLbl}`;
+    let magnetic = "";
     if (decl != null) {
       const mag = magneticBearing(r.bearing, decl);
-      text += ` (True ${r.bearing.toFixed(0)}° / Magnetic ${mag.toFixed(0)}°)`;
+      magnetic = `True ${r.bearing.toFixed(0)}° / Magnetic ${mag.toFixed(0)}°`;
     }
-    return text;
+    return `<div class="path-block"><div class="path-label">${label}</div><div class="path-detail">${detail}${magnetic ? `<div class="magnetic">${magnetic}</div>` : ""}</div></div>`;
   }
 
-  content.innerHTML = `<div class="path-row">${line("short")}</div><div class="path-row">${line("long")}</div>`;
+  content.innerHTML = pathBlock("short") + pathBlock("long");
 }
 
 async function persist() {
@@ -335,6 +362,7 @@ async function persist() {
 }
 
 async function loadAndRender() {
+  clearSidebarError();
   if (!window.azimuth) {
     renderHomeSelect();
     renderTargetSelect();
@@ -355,6 +383,7 @@ async function loadAndRender() {
     renderMap();
     renderResults();
   } catch (e) {
+    showSidebarError("Could not load saved data. Using defaults.");
     state.homes = [DEFAULT_HOME];
     state.targets = [];
     state.activeHomeId = DEFAULT_HOME.id;
@@ -378,7 +407,12 @@ document.getElementById("add-home")?.addEventListener("submit", async (e) => {
   const lat = Number(document.getElementById("home-lat").value);
   const lon = Number(document.getElementById("home-lon").value);
   const valid = validateDecimalDegrees(lat, lon);
-  if (!name || !valid) return;
+  if (!valid) {
+    showSidebarError("Invalid coordinates. Use decimal degrees (e.g. 38.9, -77.0).");
+    return;
+  }
+  clearSidebarError();
+  if (!name) return;
   const decl = document.getElementById("home-decl").value ? Number(document.getElementById("home-decl").value) : null;
   const isUpdate = sel?.value && sel.value !== NEW_HOME_VALUE;
   if (isUpdate) {
@@ -420,7 +454,11 @@ document.getElementById("set-target")?.addEventListener("submit", async (e) => {
   const lat = Number(document.getElementById("target-lat").value);
   const lon = Number(document.getElementById("target-lon").value);
   const valid = validateDecimalDegrees(lat, lon);
-  if (!valid) return;
+  if (!valid) {
+    showSidebarError("Invalid coordinates. Use decimal degrees (e.g. 38.9, -77.0).");
+    return;
+  }
+  clearSidebarError();
   if (sel?.value === NEW_TARGET_VALUE) {
     const targetName = name || "Unnamed target";
     const id = "target-" + Date.now();
@@ -562,6 +600,31 @@ document.getElementById("delete-target-btn")?.addEventListener("click", async ()
   renderTargetSelect();
   renderMap();
   renderResults();
+});
+
+document.getElementById("map-container")?.addEventListener("click", (e) => {
+  const container = document.getElementById("map-container");
+  if (!container || !container.contains(e.target)) return;
+  const rect = container.getBoundingClientRect();
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  if (w <= 0 || h <= 0) return;
+  const x = ((e.clientX - rect.left) / rect.width) * w;
+  const y = ((e.clientY - rect.top) / rect.height) * h;
+  const projection = getProjection();
+  const lonLat = projection.invert?.([x, y]);
+  if (!lonLat || lonLat.some((v) => !Number.isFinite(v))) return;
+  const [lon, lat] = lonLat;
+  const valid = validateDecimalDegrees(lat, lon);
+  if (!valid) return;
+  state.targetCoords = valid;
+  state.selectedTargetId = null;
+  clearSidebarError();
+  renderTargetSelect();
+  syncTargetFormToSelection();
+  renderMap();
+  renderResults();
+  document.getElementById("save-target-btn").style.display = "block";
 });
 
 loadAndRender().catch((e) => clearLoadStatus(e));

@@ -144,8 +144,8 @@ Both options must always be presented so the user can choose which direction to 
 ---
 
 ### Phase 4 — Target by map click
-- [ ] Click on map to set target (in addition to coords and saved list); option to **save** clicked position as a new stored target.
-- [ ] When target changes (click, form, or list): update target marker, redraw great-circle lines (home → target), recompute and show **both** paths (bearing from North, direction, distance).
+- [x] Click on map to set target (in addition to coords and saved list); option to **save** clicked position as a new stored target.
+- [x] When target changes (click, form, or list): update target marker, redraw great-circle lines (home → target), recompute and show **both** paths (bearing from North, direction, distance).
 - [ ] E2e test: click on map → target updates → lines and both path bearings/distances update correctly.
 
 **Deliverable:** Target selectable by map click; same visual (target marker, lines) and numeric output; optional save to target list.
@@ -153,13 +153,13 @@ Both options must always be presented so the user can choose which direction to 
 ---
 
 ### Phase 5 — UX and design
-- [ ] Apply design direction: warm palette, clear typography, practical layout.
-- [ ] Responsive or fixed layout suitable for Windows (and browser if applicable).
-- [ ] **Home selector** — Clear way to choose among saved homes (e.g. dropdown or list); map recenters on selection.
-- [ ] **Target selector** — Clear way to choose saved target or add by coords/click; target marker and lines update.
+- [x] Apply design direction: warm palette, clear typography, practical layout.
+- [x] Responsive or fixed layout suitable for Windows (and browser if applicable).
+- [x] **Home selector** — Clear way to choose among saved homes (e.g. dropdown or list); map recenters on selection.
+- [x] **Target selector** — Clear way to choose saved target or add by coords/click; target marker and lines update.
 - [ ] **Map** — Home at center and marked; target marked; great-circle lines visible; labels or legend if needed.
-- [ ] **Results** — Clear display of **both paths** (short and long): bearing from North (°), direction name, distance in user-selected units (km/nm/miles). If home has magnetic declination: show compass bearing for each path (e.g. “True 85° / Magnetic 82°”).
-- [ ] Error and loading states (e.g. geolocation denied, invalid coordinates, no home/target selected).
+- [x] **Results** — Clear display of **both paths** (short and long): bearing from North (°), direction name, distance in user-selected units (km/nm/miles). If home has magnetic declination: show compass bearing for each path (e.g. “True 85° / Magnetic 82°”).
+- [x] Error and loading states (e.g. geolocation denied, invalid coordinates, no home/target selected).
 - [ ] **Optional:** User-triggered **cache maps** — when online, offer an option (e.g. "Cache maps for this view") that fetches tiles from a **free** source (e.g. OSM) and stores them locally for use when offline. No subscription or payment; user controls when to cache.
 
 **Deliverable:** UI aligned with “functional, warm, intentional” design; home/target selection and both path options easy to use for antenna pointing.
