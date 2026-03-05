@@ -2,7 +2,7 @@ import * as d3 from "d3-geo";
 import { feature } from "topojson-client";
 import land110m from "world-atlas/land-110m.json";
 import countries110m from "world-atlas/countries-110m.json";
-import { paths, longPathPoints, validateDecimalDegrees, magneticBearing, distanceKm } from "../geo.js";
+import { paths, loxodromePoints, loxodromePath, validateDecimalDegrees, magneticBearing, distanceKm } from "../geo.js";
 import majorCities from "../data/major-cities.json" with { type: "json" };
 
 const worldLand = feature(land110m, land110m.objects.land);
@@ -185,17 +185,17 @@ function renderMap() {
       pathGroup.appendChild(shortPathEl);
     }
 
-    const longPts = longPathPoints(home, target, 64);
-    const longD = projectLine(longPts);
-    if (longD) {
-      const longPathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      longPathEl.setAttribute("d", longD);
-      longPathEl.setAttribute("stroke", "#8b7355");
-      longPathEl.setAttribute("stroke-width", "1");
-      longPathEl.setAttribute("stroke-dasharray", "4,2");
-      longPathEl.setAttribute("opacity", "0.8");
-      longPathEl.setAttribute("class", "path-long");
-      pathGroup.appendChild(longPathEl);
+    const loxoPts = loxodromePoints(home, target, 64);
+    const loxoD = projectLine(loxoPts);
+    if (loxoD) {
+      const loxoPathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      loxoPathEl.setAttribute("d", loxoD);
+      loxoPathEl.setAttribute("stroke", "#8b7355");
+      loxoPathEl.setAttribute("stroke-width", "1");
+      loxoPathEl.setAttribute("stroke-dasharray", "4,2");
+      loxoPathEl.setAttribute("opacity", "0.8");
+      loxoPathEl.setAttribute("class", "path-loxodrome");
+      pathGroup.appendChild(loxoPathEl);
     }
   }
   g.appendChild(pathGroup);
@@ -413,18 +413,17 @@ function renderResults() {
   if (targetHint) targetHint.style.visibility = target ? "hidden" : "visible";
 
   if (!target) {
-    content.innerHTML = "<p class=\"path-detail\" style=\"color: var(--text-muted);\">Set a target by coordinates, map click, or saved list to see both paths.</p>";
+    content.innerHTML = "<p class=\"path-detail\" style=\"color: var(--text-muted);\">Set a target by coordinates, map click, or saved list to see Great-Circle and Loxodrome.</p>";
     return;
   }
 
   const result = paths(home, target);
+  const loxo = loxodromePath(home, target);
   const decl = home.magneticDeclination != null ? home.magneticDeclination : null;
   const unitLbl = unitLabel(unit);
 
-  function pathBlock(shortOrLong) {
-    const r = result[shortOrLong];
+  function pathBlock(label, r) {
     const dist = distanceInUnit(r.distanceKm, unit);
-    const label = shortOrLong === "short" ? "Short path" : "Long path";
     let detail = `${r.bearing.toFixed(1)}° ${r.direction} — ${dist.toFixed(1)} ${unitLbl}`;
     let magnetic = "";
     if (decl != null) {
@@ -434,7 +433,7 @@ function renderResults() {
     return `<div class="path-block"><div class="path-label">${label}</div><div class="path-detail">${detail}${magnetic ? `<div class="magnetic">${magnetic}</div>` : ""}</div></div>`;
   }
 
-  content.innerHTML = pathBlock("short") + pathBlock("long");
+  content.innerHTML = pathBlock("Great-Circle", result.short) + pathBlock("Loxodrome", loxo);
 }
 
 async function persist() {

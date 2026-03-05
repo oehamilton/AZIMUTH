@@ -62,7 +62,7 @@
     .home-marker { fill: var(--color-home); stroke: #1a1a1a; stroke-width: 2; }
     .target-marker { fill: var(--color-target); stroke: #1a1a1a; stroke-width: 2; }
     .path-short { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.9; }
-    .path-long { fill: none; stroke: var(--accent-dim); stroke-width: 1; stroke-dasharray: 4,2; opacity: 0.8; }
+    .path-loxodrome { fill: none; stroke: var(--accent-dim); stroke-width: 1; stroke-dasharray: 4,2; opacity: 0.8; }
     .map-cities .city-dot { fill: var(--text-muted); stroke: none; }
     .map-cities .city-label { fill: var(--text-muted); font-family: system-ui, sans-serif; dominant-baseline: middle; }
   </style>
@@ -115,8 +115,8 @@
       <div id="map-legend" aria-hidden="true">
         <span><span class="leg-dot home"></span> Home</span>
         <span><span class="leg-dot target"></span> Target</span>
-        <span>— Short path</span>
-        <span>- - Long path</span>
+        <span>— Great-Circle</span>
+        <span>- - Loxodrome</span>
       </div>
     </div>
   </div>
