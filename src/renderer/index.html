@@ -45,7 +45,11 @@
     .sidebar-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
     #map-container { flex: 1; position: relative; cursor: crosshair; min-width: 320px; }
     #map { width: 100%; height: 100%; background: #0f0e0d; display: block; }
-    #map-legend { position: absolute; bottom: 0.75rem; left: 0.75rem; background: rgba(37,34,32,0.92); color: var(--text); font-size: 0.75rem; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); }
+    #map-legend { position: absolute; bottom: 0.75rem; left: 0.75rem; z-index: 10; pointer-events: none; background: rgba(37,34,32,0.92); color: var(--text); font-size: 0.75rem; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); }
+    .map-controls { position: absolute; top: 0.75rem; left: 0.75rem; display: flex; gap: 0.35rem; z-index: 10; pointer-events: auto; }
+    .map-controls button { padding: 0.4rem 0.6rem; background: rgba(37,34,32,0.92); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
+    .map-controls button:hover { background: var(--bg-card); }
+    .map-controls button.active { background: var(--accent); color: var(--bg-app); border-color: var(--accent); }
     #map-legend span { margin-right: 0.75rem; white-space: nowrap; }
     #map-legend .leg-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.25rem; vertical-align: middle; }
     #map-legend .leg-dot.home { background: var(--accent); }
@@ -95,6 +99,10 @@
     </aside>
     <div id="map-container">
       <svg id="map"></svg>
+      <div id="map-zoom-controls" class="map-controls" aria-label="Map zoom">
+        <button type="button" id="zoom-fit-path" title="Zoom in to fit home and target">Fit path</button>
+        <button type="button" id="zoom-full" title="Zoom out to full world view">Full map</button>
+      </div>
       <div id="map-legend" aria-hidden="true">
         <span><span class="leg-dot home"></span> Home</span>
         <span><span class="leg-dot target"></span> Target</span>

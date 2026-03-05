@@ -1,7 +1,7 @@
 import * as d3 from "d3-geo";
 import { feature } from "topojson-client";
 import land110m from "world-atlas/land-110m.json";
-import { paths, longPathPoints, validateDecimalDegrees, magneticBearing } from "../geo.js";
+import { paths, longPathPoints, validateDecimalDegrees, magneticBearing, distanceKm } from "../geo.js";
 
 const worldLand = feature(land110m, land110m.objects.land);
 
@@ -27,6 +27,9 @@ const DEFAULT_HOME = { id: "default-dc", name: "Washington DC, White House", lat
 const KM_PER_NM = 1.852;
 const KM_PER_MILE = 1.60934;
 
+const MAP_ZOOM_FULL = "full";
+const MAP_ZOOM_FIT_PATH = "fit-path";
+
 let state = {
   homes: [DEFAULT_HOME],
   activeHomeId: DEFAULT_HOME.id,
@@ -34,6 +37,7 @@ let state = {
   selectedTargetId: null,
   targetCoords: null,
   data: null,
+  mapZoom: MAP_ZOOM_FULL,
 };
 
 function getActiveHome() {
@@ -56,14 +60,33 @@ function unitLabel(unit) {
   return { km: "km", nm: "nm", miles: "mi" }[unit] || "km";
 }
 
+const EARTH_RADIUS_KM = 6371;
+
 function getProjection() {
   const home = getActiveHome();
+  const target = getCurrentTarget();
   const container = document.getElementById("map-container");
   const width = container?.clientWidth || 400;
   const height = container?.clientHeight || 300;
-  const projection = d3.geoAzimuthalEquidistant().fitSize([width, height], { type: "Sphere" });
+  const projection = d3.geoAzimuthalEquidistant();
   projection.rotate([-home.lon, -home.lat]);
   projection.center([0, 0]);
+  if (state.mapZoom === MAP_ZOOM_FIT_PATH) {
+    try {
+      let angleDeg = 10;
+      if (target) {
+        const distKm = distanceKm(home.lat, home.lon, target.lat, target.lon);
+        const angleRad = distKm / EARTH_RADIUS_KM;
+        angleDeg = Math.max(5, (angleRad * (180 / Math.PI)) * 1.25);
+      }
+      const circle = d3.geoCircle().center([home.lon, home.lat]).radius(angleDeg)();
+      projection.fitSize([width, height], circle);
+    } catch (_) {
+      projection.fitSize([width, height], { type: "Sphere" });
+    }
+  } else {
+    projection.fitSize([width, height], { type: "Sphere" });
+  }
   return projection;
 }
 
@@ -177,6 +200,11 @@ function renderMap() {
     targetMarker.setAttribute("class", "target-marker");
     g.appendChild(targetMarker);
   }
+
+  const zoomFit = document.getElementById("zoom-fit-path");
+  const zoomFull = document.getElementById("zoom-full");
+  if (zoomFit) zoomFit.classList.toggle("active", state.mapZoom === MAP_ZOOM_FIT_PATH);
+  if (zoomFull) zoomFull.classList.toggle("active", state.mapZoom === MAP_ZOOM_FULL);
 }
 
 const NEW_HOME_VALUE = "__new__";
@@ -602,9 +630,25 @@ document.getElementById("delete-target-btn")?.addEventListener("click", async ()
   renderResults();
 });
 
+document.body.addEventListener("click", (e) => {
+  const controls = e.target?.closest?.("#map-zoom-controls");
+  if (!controls) return;
+  const btn = e.target?.closest?.("button");
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (btn.id === "zoom-fit-path") {
+    state.mapZoom = MAP_ZOOM_FIT_PATH;
+  } else if (btn.id === "zoom-full") {
+    state.mapZoom = MAP_ZOOM_FULL;
+  } else return;
+  renderMap();
+});
+
 document.getElementById("map-container")?.addEventListener("click", (e) => {
   const container = document.getElementById("map-container");
   if (!container || !container.contains(e.target)) return;
+  if (e.target.closest("#map-zoom-controls") || e.target.closest("#map-legend")) return;
   const rect = container.getBoundingClientRect();
   const w = container.clientWidth;
   const h = container.clientHeight;
