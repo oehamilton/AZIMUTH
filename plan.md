@@ -146,7 +146,7 @@ Both options must always be presented so the user can choose which direction to 
 ### Phase 4 — Target by map click ✅ Complete
 - [x] Click on map to set target (in addition to coords and saved list); option to **save** clicked position as a new stored target.
 - [x] When target changes (click, form, or list): update target marker, redraw great-circle lines (home → target), recompute and show **both** paths (bearing from North, direction, distance).
-- [ ] E2e test: click on map → target updates → lines and both path bearings/distances update correctly. _(Deferred to Phase 7.)_
+- [x] E2e test: click on map → target updates → lines and both path bearings/distances update correctly.
 
 **Deliverable:** Target selectable by map click; same visual (target marker, lines) and numeric output; optional save to target list.
 
