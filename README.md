@@ -2,6 +2,8 @@
 
 Antenna pointing app: world map with home at center, target selection, and **short path** / **long path** bearing from North and distance. No paid map services; bundled default world map + optional user-triggered caching. Windows 11, Electron, MSIX.
 
+**Download:** [Releases](https://github.com/oehamilton/AZIMUTH/releases) — get the Windows installer (`AZIMUTH Setup 0.1.0.exe`) or portable (`AZIMUTH 0.1.0.exe`).
+
 See **plan.md** for the full development plan and Phase 0 detailed steps.
 
 ## Quick start
