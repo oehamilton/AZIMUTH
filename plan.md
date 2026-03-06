@@ -185,6 +185,15 @@ Both options must always be presented so the user can choose which direction to 
 
 - [x] **Help → About:** Company (Project8X, Inc.), support contact (support@project8x.com), and license summary (free for amateur/personal use; commercial licensing on request). See `docs/licensing-and-support.md`.
 
+**Follow-up (post-release)** — ordered easiest → longest:
+
+1. [x] **About dialog:** Open the project8x.com link in the user's external browser instead of inside the Help/About modal (e.g. use Electron `shell.openExternal` for that link).
+2. [x] **GitHub:** Add screenshots of the app to the repo (e.g. README or repo social image) so the project page shows the UI.
+3. [ ] **Set home from current location:** Add an option to set (or add) home using the system's current location when available (e.g. Windows location / geolocation); manual entry remains primary; handle denied or unavailable location gracefully.
+4. [ ] **License key:** Add license key input (e.g. in settings or Help/About) and validation logic to support commercial licensing (unlock or confirm licensed use; optional telemetry-free activation if desired).
+5. [ ] **Optional detailed tiles:** Add an option to download more detailed tiles (e.g. from a free source like OSM) when zoomed in, to improve ad-hoc target selection on the map; cache tiles locally for offline use. Aligns with deferred "user-triggered raster tile cache" (Phase 5 / Section 7).
+6. [ ] **Android (e.g. Capacitor):** Android build: Capacitor shell, replace persistence with Capacitor APIs, touch-friendly UI, optional store publish. Single repo: shared renderer and geo; platform-specific persistence and shell; run/build either Electron (Windows) or Capacitor (Android). **Android-only:** Use device compass (magnetometer) to assist orienting the phone to the calculated bearing instead of a separate physical compass.
+
 ---
 
 ## 5. Test strategy
@@ -277,4 +286,4 @@ This gives: no subscriptions, no cost, no requirement to be online to use the so
 
 ---
 
-*Last updated: 2025-03-04*
+*Last updated: 2025-03-06*

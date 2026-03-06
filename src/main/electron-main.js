@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -81,6 +81,19 @@ function openAboutWindow() {
     },
   });
   win.setMenuBarVisibility(false);
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:")) {
+      shell.openExternal(url);
+      return { action: "deny" };
+    }
+    return { action: "allow" };
+  });
+  win.webContents.on("will-navigate", (event, url) => {
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:")) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
   win.loadFile(join(__dirname, "..", "..", "dist", "renderer", "about.html"));
   win.webContents.on("did-finish-load", () => {
     win.webContents.executeJavaScript(`window.appVersion = ${JSON.stringify(app.getVersion())}; document.getElementById('app-version').textContent = window.appVersion;`).catch(() => {});
