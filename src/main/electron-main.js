@@ -132,6 +132,18 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+  // Geolocation: allow so "Use current location" can get position. When running the built app
+  // (AZIMUTH.exe), Windows shows "AZIMUTH" in Settings → Privacy → Location; when running from
+  // source (pnpm start) the process is Electron so Windows shows "Electron".
+  const ses = win.webContents.session;
+  ses.setPermissionCheckHandler((_webContents, permission) => {
+    if (permission === "geolocation") return true;
+    return false;
+  });
+  ses.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === "geolocation") callback(true);
+    else callback(false);
+  });
   win.loadFile(join(__dirname, "..", "..", "dist", "renderer", "index.html"));
   // DevTools: open manually via F12 or Application menu if needed. Auto-open was removed to avoid console noise from DevTools internals (Autofill/remote fetch errors).
 }

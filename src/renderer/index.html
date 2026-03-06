@@ -104,8 +104,10 @@
           <input type="number" id="home-decl" placeholder="Mag decl (°)" step="any" />
           <button type="submit" id="home-submit-btn">Add home</button>
         </form>
+        <button type="button" id="use-current-location-btn" class="sidebar-hint" style="margin-top: 0.35rem; padding: 0.35rem 0.5rem; background: var(--border); color: var(--text); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 0.8rem; width: 100%;">Use current location</button>
         <button type="button" id="delete-home-btn" class="btn-danger" style="margin-top: 0.2rem; display: none;">Delete home</button>
       </section>
+      <div id="sidebar-error" class="sidebar-error" role="alert"></div>
       <section id="targets-section">
         <h2>Targets</h2>
         <select id="target-select" class="sidebar-select" aria-label="Select saved target"></select>
@@ -120,7 +122,6 @@
         <button type="button" id="save-target-btn" style="margin-top: 0.2rem; padding: 0.4rem; background: var(--border); color: var(--text); border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; display: none;">Save as target</button>
         <button type="button" id="delete-target-btn" class="btn-danger" style="margin-top: 0.2rem; display: none;">Delete target</button>
         <p class="sidebar-hint" id="target-hint">Or click on the map to set target.</p>
-        <div id="sidebar-error" class="sidebar-error" role="alert"></div>
       </section>
     </aside>
     <div id="map-container">

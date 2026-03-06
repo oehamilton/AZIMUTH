@@ -652,6 +652,7 @@ document.querySelectorAll('input[name="antenna-type"]').forEach((radio) => {
 });
 
 document.getElementById("home-select")?.addEventListener("change", (e) => {
+  clearSidebarError();
   const id = e.target.value;
   if (id === NEW_HOME_VALUE || id === "") {
     syncHomeFormToSelection();
@@ -661,6 +662,50 @@ document.getElementById("home-select")?.addEventListener("change", (e) => {
   syncHomeFormToSelection();
   renderMap();
   renderResults();
+});
+
+document.getElementById("use-current-location-btn")?.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    showSidebarError("Location is not available on this device.");
+    return;
+  }
+  const btn = document.getElementById("use-current-location-btn");
+  const origText = btn?.textContent;
+  if (btn) btn.textContent = "Getting location…";
+  clearSidebarError();
+  const sel = document.getElementById("home-select");
+  if (sel && sel.value !== NEW_HOME_VALUE) {
+    sel.value = NEW_HOME_VALUE;
+    syncHomeFormToSelection();
+  }
+  const nameRow = document.getElementById("home-name-row");
+  if (nameRow) nameRow.classList.add("visible");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      if (btn) btn.textContent = origText;
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const latEl = document.getElementById("home-lat");
+      const lonEl = document.getElementById("home-lon");
+      const nameEl = document.getElementById("home-name");
+      if (latEl) latEl.value = lat;
+      if (lonEl) lonEl.value = lon;
+      if (nameEl) nameEl.value = "Current location";
+      clearSidebarError();
+    },
+    (err) => {
+      if (btn) btn.textContent = origText;
+      const code = err.code;
+      const msg =
+        code === 1
+          ? "Location access denied. Enable location in Windows settings or allow when prompted."
+          : code === 2
+            ? "Location is on but no position could be determined. Try again in a few seconds, or enter coordinates manually."
+            : "Location request timed out. Try again.";
+      showSidebarError(msg);
+    },
+    { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 }
+  );
 });
 
 document.getElementById("target-select")?.addEventListener("change", (e) => {
