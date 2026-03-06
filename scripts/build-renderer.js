@@ -18,3 +18,4 @@ await esbuild.build({
 });
 
 copyFileSync(join(root, "src", "renderer", "index.html"), join(outDir, "index.html"));
+copyFileSync(join(root, "src", "renderer", "about.html"), join(outDir, "about.html"));

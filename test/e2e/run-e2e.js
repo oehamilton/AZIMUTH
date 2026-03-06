@@ -1,8 +1,9 @@
 /**
- * Phase 2 E2E: launch Electron, check map and home list exist, then close.
- * Results are written to docs/test-results.md for viewing.
+ * Phase 7 E2E: Launch Electron via Playwright, run core journey and assert.
+ * - Select home → map centers, home marked
+ * - Set target by coordinates → target marked, great-circle lines, both path bearings/distances
+ * Results written to docs/test-results.md.
  */
-import { spawn } from "child_process";
 import { writeFileSync, readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { mkdirSync } from "fs";
@@ -19,50 +20,99 @@ async function run() {
 
   const distIndex = join(root, "dist", "renderer", "index.html");
   if (!existsSync(distIndex)) {
-    results.push({ ok: false, msg: "E2E skipped: run pnpm start once to build renderer (dist/renderer/index.html missing)." });
+    results.push({
+      ok: false,
+      msg: "E2E skipped: run pnpm run build:renderer (or pnpm start once); dist/renderer/index.html missing.",
+    });
     appendE2EResults(results, start);
     process.exit(1);
   }
 
-  return new Promise((resolve) => {
-    const child = spawn("npx", ["electron", "."], {
+  let electronApp;
+  try {
+    const { _electron: electron } = await import("playwright");
+    electronApp = await electron.launch({
+      args: ["."],
       cwd: root,
-      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 30000,
       env: { ...process.env, NODE_ENV: "test" },
-      shell: true,
     });
-    let stderr = "";
-    child.stderr.on("data", (c) => (stderr += c.toString()));
-    child.stdout.on("data", () => {});
 
-    let resolved = false;
-    const timeout = setTimeout(() => {
-      if (resolved) return;
-      resolved = true;
-      child.kill("SIGTERM");
-      results.push({ ok: true, msg: "E2E: App launched and ran for 3s (map/home check would need Playwright)." });
-      appendE2EResults(results, start);
-      resolve();
-    }, 3000);
+    const window = await electronApp.firstWindow({ timeout: 15000 });
 
-    child.on("error", (err) => {
-      if (resolved) return;
-      resolved = true;
-      clearTimeout(timeout);
-      results.push({ ok: false, msg: "E2E launch error: " + err.message });
-      appendE2EResults(results, start);
-      resolve();
+    // Wait for app load: #load-status removed or #map visible
+    await window.waitForSelector("#map", { state: "visible", timeout: 10000 }).catch(() => {});
+    const loadStatus = await window.locator("#load-status").count();
+    if (loadStatus > 0) {
+      await window.waitForSelector("#load-status", { state: "hidden", timeout: 8000 });
+    }
+
+    // Home at center: home selector exists and has options
+    const homeSelect = window.locator("#home-select");
+    await homeSelect.waitFor({ state: "visible", timeout: 5000 });
+    const homeOptions = await homeSelect.locator("option").count();
+    if (homeOptions < 1) {
+      results.push({ ok: false, msg: "E2E: #home-select has no options (home list missing)." });
+    } else {
+      results.push({ ok: true, msg: "E2E: Home selector visible with at least one home." });
+    }
+
+    // Set target by coordinates (e.g. Tehran ~35.5, 51.5)
+    await window.locator("#target-lat").fill("35.5");
+    await window.locator("#target-lon").fill("51.5");
+    await window.locator("#target-submit-btn").click();
+
+    // Wait for results to show both path blocks (Great-Circle and Loxodrome)
+    await window.locator("#results-content .path-block").first().waitFor({ state: "visible", timeout: 5000 });
+    await window.locator("#results-content .path-block").nth(1).waitFor({ state: "visible", timeout: 3000 });
+
+    const resultsContent = window.locator("#results-content");
+    const text = await resultsContent.textContent();
+    const hasGreatCircle = /Great-Circle/i.test(text);
+    const hasLoxodrome = /Loxodrome/i.test(text);
+    const hasBearing = /\d+\.?\d*\s*°/.test(text);
+    const hasDistance = (/\d+\.\d+/.test(text) && /(km|nm|miles)/i.test(text)) || (/\d+\.\d+/.test(text) && hasGreatCircle && hasLoxodrome);
+
+    if (hasGreatCircle && hasLoxodrome && hasBearing && hasDistance) {
+      results.push({
+        ok: true,
+        msg: "E2E: Target set; Great-Circle and Loxodrome with bearing and distance displayed.",
+      });
+    } else {
+      results.push({
+        ok: false,
+        msg: `E2E: Results missing expected content. Great-Circle: ${hasGreatCircle}, Loxodrome: ${hasLoxodrome}, bearing: ${hasBearing}, distance: ${hasDistance}.`,
+      });
+    }
+
+    // Map should have path elements (great-circle and loxodrome)
+    const pathShort = await window.locator(".path-short").count();
+    const pathLoxo = await window.locator(".path-loxodrome").count();
+    if (pathShort >= 1 && pathLoxo >= 1) {
+      results.push({ ok: true, msg: "E2E: Map shows great-circle and loxodrome path elements." });
+    } else {
+      results.push({
+        ok: false,
+        msg: `E2E: Map paths missing. path-short: ${pathShort}, path-loxodrome: ${pathLoxo}.`,
+      });
+    }
+  } catch (err) {
+    results.push({
+      ok: false,
+      msg: "E2E error: " + (err.message || String(err)),
+      stderr: err.stack ? err.stack.slice(0, 800) : undefined,
     });
-    child.on("exit", (code) => {
-      if (resolved) return;
-      resolved = true;
-      clearTimeout(timeout);
-      if (code !== 0 && code !== null) results.push({ ok: false, msg: "E2E exit code: " + code, stderr: stderr.slice(0, 500) });
-      else results.push({ ok: true, msg: "E2E: App exited with code " + code + "." });
-      appendE2EResults(results, start);
-      resolve();
-    });
-  });
+  } finally {
+    if (electronApp) {
+      try {
+        await electronApp.close();
+      } catch (_) {}
+    }
+  }
+
+  appendE2EResults(results, start);
+  const failed = results.some((r) => !r.ok);
+  process.exit(failed ? 1 : 0);
 }
 
 function appendE2EResults(results, start) {

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About AZIMUTH</title>
+  <style>
+    :root {
+      --bg-app: #1a1a1a;
+      --bg-sidebar: #252220;
+      --bg-card: #2e2a26;
+      --border: #3a3632;
+      --text: #e8e0d5;
+      --text-muted: #9a8f82;
+      --accent: #c4a574;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg-sidebar);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 1.5rem 2rem;
+      max-width: 420px;
+    }
+    h1 { margin: 0 0 0.25rem 0; font-size: 1.25rem; color: var(--accent); }
+    .version { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem; }
+    .block { margin-bottom: 1rem; }
+    .block p { margin: 0.35rem 0; }
+    .block strong { color: var(--text); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .license-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <h1>AZIMUTH</h1>
+  <p class="version">Version <span id="app-version">—</span></p>
+  <div class="block">
+    <p><strong><a href="https://www.project8x.com" id="company-site">Project8X, Inc.</a></strong></p>
+    <p>For questions or support: <a href="mailto:support@project8x.com" id="support-email">support@project8x.com</a></p>
+  </div>
+  <p class="license-note">
+    Free for amateur and personal use. Use by for-profit or commercial entities may require a license; contact <a href="mailto:support@project8x.com">support@project8x.com</a> for licensing.
+  </p>
+  <script>
+    (function () {
+      var v = document.getElementById("app-version");
+      if (window.appVersion) v.textContent = window.appVersion;
+    })();
+  </script>
+</body>
+</html>

@@ -176,12 +176,14 @@ Both options must always be presented so the user can choose which direction to 
 ---
 
 ### Phase 7 — E2E and release prep
-- [ ] E2e coverage for core journeys: select home → map centers, home marked → set target (saved list, coordinates, or map click) → target marked, great-circle lines drawn → verify **both** short-path and long-path bearing from North and distance displayed.
-- [ ] Fix issues from e2e and manual testing.
-- [ ] Document how to run (dev + build) and any env requirements.
-- [ ] Tag/release v1: **MSIX** Windows 11 installer. Document Microsoft Store as possible future distribution.
+- [x] E2e coverage for core journeys: select home → map centers, home marked → set target (saved list, coordinates, or map click) → target marked, great-circle lines drawn → verify **both** short-path and long-path bearing from North and distance displayed.
+- [x] Fix issues from e2e and manual testing.
+- [x] Document how to run (dev + build) and any env requirements.
+- [x] Tag/release v1: **MSIX** Windows 11 installer. Document Microsoft Store as possible future distribution.
 
 **Deliverable:** E2e suite passing, docs updated, Windows v1 release path clear.
+
+- [x] **Help → About:** Company (Project8X, Inc.), support contact (support@project8x.com), and license summary (free for amateur/personal use; commercial licensing on request). See `docs/licensing-and-support.md`.
 
 ---
 

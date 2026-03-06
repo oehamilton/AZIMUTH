@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -62,6 +62,53 @@ async function saveData(data, customPath = null) {
   await writeFile(path, JSON.stringify(out, null, 2), "utf-8");
 }
 
+let aboutWindow = null;
+
+function openAboutWindow() {
+  if (aboutWindow && !aboutWindow.isDestroyed()) {
+    aboutWindow.focus();
+    return;
+  }
+  const win = new BrowserWindow({
+    width: 440,
+    height: 320,
+    resizable: false,
+    parent: BrowserWindow.getFocusedWindow() || null,
+    modal: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  win.setMenuBarVisibility(false);
+  win.loadFile(join(__dirname, "..", "..", "dist", "renderer", "about.html"));
+  win.webContents.on("did-finish-load", () => {
+    win.webContents.executeJavaScript(`window.appVersion = ${JSON.stringify(app.getVersion())}; document.getElementById('app-version').textContent = window.appVersion;`).catch(() => {});
+  });
+  win.on("closed", () => { aboutWindow = null; });
+  aboutWindow = win;
+}
+
+function buildApplicationMenu() {
+  const template = [
+    {
+      label: "File",
+      submenu: [{ role: "quit", label: "Exit" }],
+    },
+    {
+      label: "Help",
+      submenu: [
+        {
+          label: "About AZIMUTH",
+          click: () => openAboutWindow(),
+        },
+      ],
+    },
+  ];
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -77,6 +124,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  buildApplicationMenu();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

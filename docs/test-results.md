@@ -128,3 +128,9 @@ ok 15 - validateDecimalDegrees: invalid returns null
 ```
 
 **Exit code:** 0
+
+### E2E run at 2026-03-05T19:39:58.183Z
+
+✅ E2E: Home selector visible with at least one home.
+✅ E2E: Target set; Great-Circle and Loxodrome with bearing and distance displayed.
+✅ E2E: Map shows great-circle and loxodrome path elements.
