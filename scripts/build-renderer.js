@@ -1,5 +1,5 @@
 import * as esbuild from "esbuild";
-import { copyFileSync, mkdirSync } from "fs";
+import { copyFileSync, mkdirSync, cpSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -17,5 +17,13 @@ await esbuild.build({
   platform: "browser",
 });
 
+const leafletDist = join(root, "node_modules", "leaflet", "dist");
+if (existsSync(leafletDist)) {
+  cpSync(leafletDist, join(outDir, "leaflet"), { recursive: true });
+}
+
 copyFileSync(join(root, "src", "renderer", "index.html"), join(outDir, "index.html"));
 copyFileSync(join(root, "src", "renderer", "about.html"), join(outDir, "about.html"));
+copyFileSync(join(root, "src", "renderer", "license.html"), join(outDir, "license.html"));
+copyFileSync(join(root, "src", "renderer", "logging.html"), join(outDir, "logging.html"));
+copyFileSync(join(root, "src", "renderer", "maps-preferences.html"), join(outDir, "maps-preferences.html"));

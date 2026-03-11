@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Logging — AZIMUTH</title>
+  <style>
+    :root {
+      --bg-sidebar: #252220;
+      --bg-card: #2e2a26;
+      --border: #3a3632;
+      --text: #e8e0d5;
+      --text-muted: #9a8f82;
+      --accent: #c4a574;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg-sidebar);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 1.5rem 2rem;
+      max-width: 420px;
+    }
+    h1 { margin: 0 0 1rem 0; font-size: 1.25rem; color: var(--accent); }
+    .block { margin-bottom: 1rem; }
+    label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    input[type="checkbox"] { accent-color: var(--accent); }
+    select {
+      padding: 0.4rem 0.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.9rem;
+      margin-left: 0.5rem;
+    }
+    button {
+      padding: 0.45rem 0.9rem;
+      background: var(--accent);
+      color: #1a1a1a;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-right: 0.5rem;
+      margin-top: 0.35rem;
+    }
+    button:hover { filter: brightness(1.08); }
+    button.secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .privacy { font-size: 0.8rem; color: var(--text-muted); margin: 1rem 0; padding: 0.6rem; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); }
+    #status { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; min-height: 1.2rem; }
+    .row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .export-prompt { margin-top: 1rem; padding: 0.75rem; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem; }
+    .export-prompt p { margin: 0 0 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Diagnostic logging</h1>
+  <div class="block">
+    <div class="row">
+      <label><input type="checkbox" id="logging-enabled" /> Enable logging</label>
+    </div>
+    <div class="row">
+      <label>Level</label>
+      <select id="log-level">
+        <option value="error">Error</option>
+        <option value="info">Info</option>
+        <option value="debug">Debug</option>
+      </select>
+    </div>
+    <div class="row" id="open-folder-row" style="display: none;">
+      <button type="button" id="open-log-folder-btn" class="secondary">Open log folder</button>
+    </div>
+    <button type="button" id="save-logging-btn">Save</button>
+    <p id="status"></p>
+  </div>
+  <p class="privacy">Logs are for support only and can be deleted or not sent. No PII (e.g. location names or coordinates) is included unless you opt in. Log file is limited to 5 MB; the last 2 files are kept.</p>
+  <div class="export-prompt" id="export-prompt" style="display: none;">
+    <p>Export logs before turning off?</p>
+    <button type="button" id="export-email-btn">Create zip (for email)</button>
+    <button type="button" id="export-copy-btn">Copy to folder</button>
+    <button type="button" id="export-skip-btn" class="secondary">Skip</button>
+  </div>
+  <script>
+    (function () {
+      if (!window.azimuth) return;
+      var enabledEl = document.getElementById("logging-enabled");
+      var levelEl = document.getElementById("log-level");
+      var openFolderRow = document.getElementById("open-folder-row");
+      var openFolderBtn = document.getElementById("open-log-folder-btn");
+      var saveBtn = document.getElementById("save-logging-btn");
+      var statusEl = document.getElementById("status");
+      var exportPrompt = document.getElementById("export-prompt");
+      var exportEmailBtn = document.getElementById("export-email-btn");
+      var exportCopyBtn = document.getElementById("export-copy-btn");
+      var exportSkipBtn = document.getElementById("export-skip-btn");
+
+      function setStatus(msg) { statusEl.textContent = msg || ""; }
+
+      function refreshFromPrefs() {
+        window.azimuth.loadData().then(function (data) {
+          var p = data.preferences || {};
+          enabledEl.checked = !!p.loggingEnabled;
+          levelEl.value = p.logLevel || "info";
+          openFolderRow.style.display = p.loggingEnabled && window.azimuth.loggingGetLogDir ? "block" : "none";
+        });
+      }
+
+      function applyAndSave(enable, level, skipExport) {
+        if (!skipExport && wasEnabled && !enable) {
+          exportPrompt.style.display = "block";
+          pendingDisable = true;
+          pendingLevel = level;
+          return;
+        }
+        doSave(enable, level);
+      }
+
+      var wasEnabled = false;
+      var pendingDisable = false;
+      var pendingLevel = "info";
+
+      function doSave(enable, level) {
+        var lvl = level || levelEl.value;
+        window.azimuth.loggingSetOptions({ enabled: enable, level: lvl });
+        window.azimuth.loadData().then(function (data) {
+          if (!data.preferences) data.preferences = {};
+          data.preferences.loggingEnabled = enable;
+          data.preferences.logLevel = lvl;
+          return window.azimuth.saveData(data);
+        }).then(function () {
+          if (enable) window.azimuth.loggingSetOptions({ enabled: true, level: lvl });
+          wasEnabled = enable;
+          setStatus("Saved.");
+          exportPrompt.style.display = "none";
+          pendingDisable = false;
+          openFolderRow.style.display = enable ? "block" : "none";
+          refreshFromPrefs();
+        }).catch(function () { setStatus("Could not save."); });
+      }
+
+      saveBtn.addEventListener("click", function () {
+        var enable = enabledEl.checked;
+        var level = levelEl.value;
+        applyAndSave(enable, level, false);
+      });
+
+      openFolderBtn.addEventListener("click", function () {
+        if (window.azimuth.loggingOpenLogFolder) window.azimuth.loggingOpenLogFolder();
+      });
+
+      exportEmailBtn.addEventListener("click", function () {
+        window.azimuth.loggingShowSaveZipDialog().then(function (r) {
+          if (!r.path) return;
+          window.azimuth.loggingCreateZip(r.path).then(function (res) {
+            if (res.ok) {
+              setStatus("Zip created at " + res.path + ". You can attach it to an email to support@project8x.com.");
+              doSave(false, pendingLevel);
+            } else setStatus("Could not create zip.");
+          });
+        });
+      });
+
+      exportCopyBtn.addEventListener("click", function () {
+        window.azimuth.loggingShowCopyToFolderDialog().then(function (r) {
+          if (!r.path) return;
+          window.azimuth.loggingCopyToFolder(r.path).then(function (res) {
+            if (res.ok) {
+              setStatus("Logs copied to " + (res.path || r.path) + ".");
+              doSave(false, pendingLevel);
+            } else setStatus("Could not copy: " + (res.error || ""));
+          });
+        });
+      });
+
+      exportSkipBtn.addEventListener("click", function () {
+        doSave(false, pendingLevel);
+      });
+
+      refreshFromPrefs();
+      window.azimuth.loggingGetOptions().then(function (opts) {
+        if (opts) {
+          enabledEl.checked = !!opts.enabled;
+          if (opts.level) levelEl.value = opts.level;
+          wasEnabled = !!opts.enabled;
+          openFolderRow.style.display = opts.enabled && opts.logDir ? "block" : "none";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

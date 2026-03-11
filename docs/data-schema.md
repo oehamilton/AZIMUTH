@@ -46,6 +46,12 @@ Single JSON file for all persisted app data. Optional user-chosen path (e.g. One
 |-------|------|---------|-------------|
 | `distanceUnit` | `"km"` \| `"nm"` \| `"miles"` | `"km"` | User-selected distance unit. |
 | `dataFilePath` | string \| null | null | Optional user-chosen path for this JSON file (e.g. OneDrive). |
+| `licenseKey` | string | (none) | License key for commercial use (stored when user enters via Help → License). |
+| `licenseValid` | boolean | false | Whether the stored key has been accepted as valid (client-side validation). |
+| `loggingEnabled` | boolean | false | Whether diagnostic logging is on (Help → Logging). |
+| `logLevel` | `"error"` \| `"info"` \| `"debug"` | `"info"` | Log verbosity when logging is enabled. |
+| `tilesEnabled` | boolean | false | Whether to show detailed (raster) tiles when cached (Preferences → Maps). |
+| `tilesRegion` | string | `"current"` | Region used for tile download (e.g. `"current"` = current map view). |
 
 ## File location
 

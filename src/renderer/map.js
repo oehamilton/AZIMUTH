@@ -34,6 +34,9 @@ const MAP_ZOOM_FULL = "full";
 const MAP_ZOOM_FIT_PATH = "fit-path";
 const MAX_CITIES_IN_VIEW = 20;
 
+const MAP_VIEW_GLOBE = "globe";
+const MAP_VIEW_DETAILED = "detailed";
+
 let state = {
   homes: [DEFAULT_HOME],
   activeHomeId: DEFAULT_HOME.id,
@@ -42,7 +45,11 @@ let state = {
   targetCoords: null,
   data: null,
   mapZoom: MAP_ZOOM_FULL,
+  mapViewMode: MAP_VIEW_GLOBE,
 };
+
+let leafletMap = null;
+let leafletOverlays = null;
 
 function getActiveHome() {
   return state.homes.find((h) => h.id === state.activeHomeId) || state.homes[0];
@@ -94,9 +101,135 @@ function getProjection() {
   return projection;
 }
 
+function getMapView() {
+  const home = getActiveHome();
+  const container = document.getElementById("map-container");
+  const width = container?.clientWidth || 400;
+  const height = container?.clientHeight || 300;
+  const projection = getProjection();
+  const radiusRad = (Math.min(width, height) / 2) / projection.scale();
+  const radiusDeg = (radiusRad * 180) / Math.PI;
+  return { centerLat: home.lat, centerLon: home.lon, radiusDeg: Math.min(90, Math.max(1, radiusDeg)) };
+}
+
+if (typeof window !== "undefined") window.__AZIMUTH_GET_MAP_VIEW__ = getMapView;
+
+const TILE_BASE = "azimuth-tiles://tile";
+
+function updateMapViewControls() {
+  const tilesEnabled = !!state.data?.preferences?.tilesEnabled;
+  const globeBtn = document.getElementById("map-view-globe");
+  const detailedBtn = document.getElementById("map-view-detailed");
+  if (globeBtn) globeBtn.style.display = tilesEnabled ? "" : "none";
+  if (detailedBtn) detailedBtn.style.display = tilesEnabled ? "" : "none";
+  if (globeBtn) globeBtn.classList.toggle("active", state.mapViewMode === MAP_VIEW_GLOBE);
+  if (detailedBtn) detailedBtn.classList.toggle("active", state.mapViewMode === MAP_VIEW_DETAILED);
+}
+
+function createOrUpdateDetailedMap() {
+  if (typeof window.L === "undefined") return;
+  const home = getActiveHome();
+  const target = getCurrentTarget();
+  const container = document.getElementById("tile-map");
+  if (!container) return;
+
+  if (!leafletMap) {
+    leafletMap = window.L.map("tile-map", {
+      center: [home.lat, home.lon],
+      zoom: 8,
+      zoomControl: false,
+    });
+    window.L.control.zoom({ position: "topright" }).addTo(leafletMap);
+    window.L.tileLayer(`${TILE_BASE}/{z}/{x}/{y}.png`, {
+      minZoom: 2,
+      maxZoom: 18,
+      noWrap: true,
+    }).addTo(leafletMap);
+    leafletOverlays = window.L.layerGroup().addTo(leafletMap);
+    leafletMap.on("click", (e) => {
+      if (state.mapViewMode !== MAP_VIEW_DETAILED) return;
+      const { lat, lng } = e.latlng;
+      const valid = validateDecimalDegrees(lat, lng);
+      if (!valid) return;
+      state.targetCoords = valid;
+      state.selectedTargetId = null;
+      clearSidebarError();
+      renderTargetSelect();
+      syncTargetFormToSelection();
+      createOrUpdateDetailedMap();
+      renderResults();
+      document.getElementById("save-target-btn").style.display = "block";
+    });
+  } else {
+    leafletMap.setView([home.lat, home.lon], leafletMap.getZoom());
+  }
+
+  leafletOverlays.clearLayers();
+
+  const homeIcon = window.L.divIcon({
+    className: "azimuth-marker azimuth-marker-home",
+    html: "<span></span>",
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+  leafletOverlays.addLayer(window.L.marker([home.lat, home.lon], { icon: homeIcon }));
+
+  if (target) {
+    const targetIcon = window.L.divIcon({
+      className: "azimuth-marker azimuth-marker-target",
+      html: "<span></span>",
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+    leafletOverlays.addLayer(window.L.marker([target.lat, target.lon], { icon: targetIcon }));
+
+    const shortPts = [];
+    const shortLine = d3.geoInterpolate([home.lon, home.lat], [target.lon, target.lat]);
+    for (let i = 0; i <= 32; i++) shortPts.push(shortLine(i / 32));
+    leafletOverlays.addLayer(
+      window.L.polyline(shortPts.map(([lon, lat]) => [lat, lon]), {
+        color: "#c4a574",
+        weight: 2,
+        opacity: 0.9,
+      })
+    );
+    const loxoPts = loxodromePoints(home, target, 32);
+    leafletOverlays.addLayer(
+      window.L.polyline(loxoPts.map(([lon, lat]) => [lat, lon]), {
+        color: "#8b7355",
+        weight: 1,
+        dashArray: "4,2",
+        opacity: 0.8,
+      })
+    );
+  }
+}
+
+function setMapViewMode(mode) {
+  state.mapViewMode = mode;
+  const container = document.getElementById("map-container");
+  const wrap = document.getElementById("tile-map-wrap");
+  if (container) {
+    container.classList.remove("globe-mode", "detailed-mode");
+    container.classList.add(mode === MAP_VIEW_DETAILED ? "detailed-mode" : "globe-mode");
+  }
+  if (wrap) wrap.classList.toggle("visible", mode === MAP_VIEW_DETAILED);
+  updateMapViewControls();
+  if (mode === MAP_VIEW_DETAILED) {
+    createOrUpdateDetailedMap();
+  } else {
+    renderMap();
+  }
+}
+
 function renderMap() {
   const home = getActiveHome();
   const target = getCurrentTarget();
+  if (state.mapViewMode === MAP_VIEW_DETAILED) {
+    createOrUpdateDetailedMap();
+    return;
+  }
+  updateMapViewControls();
   const width = document.getElementById("map-container").clientWidth;
   const height = document.getElementById("map-container").clientHeight;
   const projection = getProjection();
@@ -402,6 +535,10 @@ function clearSidebarError() {
   el.classList.remove("visible");
 }
 
+function logAction(level, message) {
+  if (window.azimuth?.loggingWrite) window.azimuth.loggingWrite(level, message).catch(() => {});
+}
+
 function getAntennaType() {
   const radio = document.querySelector('input[name="antenna-type"]:checked');
   return (radio && radio.value === "endfed") ? "endfed" : "yagi";
@@ -507,6 +644,7 @@ async function loadAndRender() {
 }
 
 window.addEventListener("resize", () => {
+  if (state.mapViewMode === MAP_VIEW_DETAILED && leafletMap) leafletMap.invalidateSize();
   if (getActiveHome()) renderMap();
 });
 
@@ -662,6 +800,7 @@ document.getElementById("home-select")?.addEventListener("change", (e) => {
   syncHomeFormToSelection();
   renderMap();
   renderResults();
+  logAction("debug", "home selected");
 });
 
 document.getElementById("use-current-location-btn")?.addEventListener("click", () => {
@@ -729,6 +868,7 @@ document.getElementById("target-select")?.addEventListener("change", (e) => {
   syncTargetFormToSelection();
   renderMap();
   renderResults();
+  logAction("debug", "target selected");
 });
 
 document.getElementById("delete-home-btn")?.addEventListener("click", async () => {
@@ -777,10 +917,15 @@ document.body.addEventListener("click", (e) => {
   e.stopPropagation();
   if (btn.id === "zoom-fit-path") {
     state.mapZoom = MAP_ZOOM_FIT_PATH;
+    renderMap();
   } else if (btn.id === "zoom-full") {
     state.mapZoom = MAP_ZOOM_FULL;
-  } else return;
-  renderMap();
+    renderMap();
+  } else if (btn.id === "map-view-globe") {
+    setMapViewMode(MAP_VIEW_GLOBE);
+  } else if (btn.id === "map-view-detailed") {
+    setMapViewMode(MAP_VIEW_DETAILED);
+  }
 });
 
 document.getElementById("map-container")?.addEventListener("click", (e) => {
@@ -810,3 +955,15 @@ document.getElementById("map-container")?.addEventListener("click", (e) => {
 });
 
 loadAndRender().catch((e) => clearLoadStatus(e));
+
+window.addEventListener("focus", () => {
+  if (window.azimuth?.loadData) {
+    window.azimuth.loadData().then((data) => {
+      if (data && state.data) {
+        state.data.preferences = data.preferences ?? state.data.preferences;
+        updateMapViewControls();
+        if (state.mapViewMode === MAP_VIEW_DETAILED) createOrUpdateDetailedMap();
+      }
+    }).catch(() => {});
+  }
+});

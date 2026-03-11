@@ -78,7 +78,17 @@
     .path-loxodrome { fill: none; stroke: var(--accent-dim); stroke-width: 1; stroke-dasharray: 4,2; opacity: 0.8; }
     .map-cities .city-dot { fill: var(--text-muted); stroke: none; }
     .map-cities .city-label { fill: var(--text-muted); font-family: system-ui, sans-serif; dominant-baseline: middle; }
+    #tile-map-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; z-index: 1; }
+    #tile-map-wrap.visible { display: block; }
+    #tile-map { width: 100%; height: 100%; background: #1a1a1a; }
+    #map-container.globe-mode #map { display: block; }
+    #map-container.detailed-mode #map { display: none; }
+    .azimuth-marker { background: none; border: none; }
+    .azimuth-marker span { display: block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #1a1a1a; box-sizing: border-box; }
+    .azimuth-marker-home span { background: var(--color-home); }
+    .azimuth-marker-target span { background: var(--color-target); }
   </style>
+  <link rel="stylesheet" href="leaflet/leaflet.css" />
 </head>
 <body>
   <div id="load-status" style="position:fixed;top:0;left:0;right:0;padding:0.5rem;background:#252220;color:#c4a574;font-size:0.9rem;z-index:9999;">Loading…</div>
@@ -124,11 +134,16 @@
         <p class="sidebar-hint" id="target-hint">Or click on the map to set target.</p>
       </section>
     </aside>
-    <div id="map-container">
+    <div id="map-container" class="globe-mode">
       <svg id="map"></svg>
+      <div id="tile-map-wrap" aria-hidden="true">
+        <div id="tile-map"></div>
+      </div>
       <div id="map-zoom-controls" class="map-controls" aria-label="Map zoom">
         <button type="button" id="zoom-fit-path" title="Zoom in to fit home and target">Fit path</button>
         <button type="button" id="zoom-full" title="Zoom out to full world view">Full map</button>
+        <button type="button" id="map-view-globe" class="map-view-btn active" title="Globe view">Globe</button>
+        <button type="button" id="map-view-detailed" class="map-view-btn" title="Detailed tiles (cached)">Detailed</button>
       </div>
       <div id="map-legend" aria-hidden="true">
         <span><span class="leg-dot home"></span> Home</span>
@@ -146,6 +161,7 @@
       </div>
     </div>
   </div>
+  <script src="leaflet/leaflet.js"></script>
   <script src="map.js"></script>
 </body>
 </html>

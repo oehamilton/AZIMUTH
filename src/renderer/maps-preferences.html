@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Maps — Preferences</title>
+  <style>
+    :root {
+      --bg-sidebar: #252220;
+      --bg-card: #2e2a26;
+      --border: #3a3632;
+      --text: #e8e0d5;
+      --text-muted: #9a8f82;
+      --accent: #c4a574;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg-sidebar);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 1.5rem 2rem;
+      max-width: 440px;
+    }
+    h1 { margin: 0 0 0.5rem 0; font-size: 1.25rem; color: var(--accent); }
+    .sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .block { margin-bottom: 1.25rem; }
+    .block h2 { margin: 0 0 0.5rem 0; font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    input[type="checkbox"] { accent-color: var(--accent); }
+    select {
+      padding: 0.4rem 0.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.9rem;
+      margin-top: 0.35rem;
+      width: 100%;
+      max-width: 280px;
+    }
+    button {
+      padding: 0.45rem 0.9rem;
+      background: var(--accent);
+      color: #1a1a1a;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-right: 0.5rem;
+      margin-top: 0.35rem;
+    }
+    button:hover { filter: brightness(1.08); }
+    button.secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    #cache-status { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
+    #status { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; min-height: 1.2rem; }
+    .hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem; }
+  </style>
+</head>
+<body>
+  <h1>Maps</h1>
+  <p class="sub">Preferences → Maps</p>
+
+  <div class="block">
+    <h2>Detailed tiles</h2>
+    <label><input type="checkbox" id="tiles-enabled" /> Show detailed tiles when cached</label>
+    <p class="hint">When on, cached raster tiles (e.g. from OpenStreetMap) are shown over the map for areas you have downloaded. No data is sent unless you download a region.</p>
+  </div>
+
+  <div class="block">
+    <h2>Region to download</h2>
+    <label for="tiles-region">Region</label>
+    <select id="tiles-region">
+      <option value="current">Current map view</option>
+    </select>
+    <button type="button" id="download-tiles-btn">Download tiles for selected region</button>
+    <p class="hint">Download tiles for the current map view (center and zoom). Requires internet. Tiles are stored locally for offline use.</p>
+  </div>
+
+  <div class="block">
+    <h2>Cache</h2>
+    <p id="cache-status">—</p>
+    <button type="button" id="open-cache-btn" class="secondary">Open cache folder</button>
+    <button type="button" id="clear-cache-btn" class="secondary">Clear cache</button>
+    <p id="status"></p>
+  </div>
+
+  <button type="button" id="save-btn">Save</button>
+
+  <script>
+    (function () {
+      if (!window.azimuth) return;
+      var tilesEnabledEl = document.getElementById("tiles-enabled");
+      var tilesRegionEl = document.getElementById("tiles-region");
+      var downloadBtn = document.getElementById("download-tiles-btn");
+      var cacheStatusEl = document.getElementById("cache-status");
+      var openCacheBtn = document.getElementById("open-cache-btn");
+      var clearCacheBtn = document.getElementById("clear-cache-btn");
+      var saveBtn = document.getElementById("save-btn");
+      var statusEl = document.getElementById("status");
+
+      function setStatus(msg) { statusEl.textContent = msg || ""; }
+
+      function refreshCacheStatus() {
+        if (!window.azimuth.mapsGetCacheSize) return;
+        window.azimuth.mapsGetCacheSize().then(function (info) {
+          if (!info || (info.fileCount === 0 && info.sizeBytes === 0)) {
+            cacheStatusEl.textContent = "Not cached";
+            return;
+          }
+          var mb = (info.sizeBytes / (1024 * 1024)).toFixed(1);
+          cacheStatusEl.textContent = "Cached: " + mb + " MB" + (info.fileCount ? " (" + info.fileCount + " files)" : "");
+        }).catch(function () { cacheStatusEl.textContent = "Not cached"; });
+      }
+
+      function refreshFromPrefs() {
+        window.azimuth.loadData().then(function (data) {
+          var p = data.preferences || {};
+          tilesEnabledEl.checked = !!p.tilesEnabled;
+          if (p.tilesRegion) tilesRegionEl.value = p.tilesRegion;
+        });
+      }
+
+      saveBtn.addEventListener("click", function () {
+        window.azimuth.loadData().then(function (data) {
+          if (!data.preferences) data.preferences = {};
+          data.preferences.tilesEnabled = tilesEnabledEl.checked;
+          data.preferences.tilesRegion = tilesRegionEl.value || "current";
+          return window.azimuth.saveData(data);
+        }).then(function () {
+          setStatus("Saved.");
+        }).catch(function () { setStatus("Could not save."); });
+      });
+
+      if (window.azimuth.onMapsDownloadProgress) {
+        window.azimuth.onMapsDownloadProgress(function (data) {
+          if (data.done) {
+            setStatus("Download complete.");
+            downloadBtn.disabled = false;
+            refreshCacheStatus();
+          } else {
+            setStatus("Downloaded " + (data.current || 0) + " / " + (data.total || 0) + " tiles…");
+          }
+        });
+      }
+
+      downloadBtn.addEventListener("click", function () {
+        if (!window.azimuth.mapsStartDownloadForCurrentView) {
+          setStatus("Download not available.");
+          return;
+        }
+        downloadBtn.disabled = true;
+        setStatus("Downloading…");
+        window.azimuth.mapsStartDownloadForCurrentView().then(function (res) {
+          if (!res || !res.ok) setStatus(res && res.error ? res.error : "Download failed.");
+          downloadBtn.disabled = false;
+          refreshCacheStatus();
+        }).catch(function () {
+          setStatus("Download failed.");
+          downloadBtn.disabled = false;
+        });
+      });
+
+      openCacheBtn.addEventListener("click", function () {
+        if (window.azimuth.mapsOpenCacheFolder) window.azimuth.mapsOpenCacheFolder();
+      });
+
+      clearCacheBtn.addEventListener("click", function () {
+        if (!window.azimuth.mapsClearCache) return;
+        setStatus("Clearing…");
+        window.azimuth.mapsClearCache().then(function (res) {
+          setStatus(res && res.ok ? "Cache cleared." : (res && res.error) || "Could not clear.");
+          refreshCacheStatus();
+        }).catch(function () { setStatus("Could not clear cache."); });
+      });
+
+      refreshFromPrefs();
+      refreshCacheStatus();
+    })();
+  </script>
+</body>
+</html>

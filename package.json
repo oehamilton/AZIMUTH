@@ -51,6 +51,7 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "electron": "^33.0.0",
+    "leaflet": "^1.9.4",
     "electron-builder": "^26.8.1",
     "esbuild": "^0.24.0",
     "playwright": "^1.58.2",
