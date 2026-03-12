@@ -81,6 +81,8 @@
     #tile-map-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; z-index: 1; }
     #tile-map-wrap.visible { display: block; }
     #tile-map { width: 100%; height: 100%; background: #1a1a1a; }
+    #tile-map-wrap.visible .leaflet-container { cursor: crosshair !important; }
+    #tile-map-wrap.visible .leaflet-grab { cursor: crosshair !important; }
     #map-container.globe-mode #map { display: block; }
     #map-container.detailed-mode #map { display: none; }
     .azimuth-marker { background: none; border: none; }

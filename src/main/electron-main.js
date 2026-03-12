@@ -414,14 +414,33 @@ app.whenReady().then(async () => {
   protocol.handle("azimuth-tiles", async (request) => {
     const u = new URL(request.url);
     const pathname = u.pathname.replace(/^\/+/, "");
-    const subpath = pathname.replace(/^tile\/?/, "");
+    const subpath = pathname.replace(/^tile\/?/, "").replace(/\/$/, "");
     if (!subpath || subpath.includes("..")) return new Response(null, { status: 404 });
-    const filePath = join(getTilesCachePath(), ...subpath.split("/"));
+    const parts = subpath.split("/");
+    const filePath = join(getTilesCachePath(), ...parts);
     try {
-      return await net.fetch(pathToFileURL(filePath).toString());
-    } catch (_) {
-      return new Response(null, { status: 404 });
+      const res = await net.fetch(pathToFileURL(filePath).toString());
+      if (res.ok) return res;
+    } catch (_) {}
+    // Fallback: fetch from OSM when tile is not in cache (connects detail tiles when online).
+    if (parts.length >= 3) {
+      const z = parts[0];
+      const x = parts[1];
+      const y = parts[2].replace(/\.png$/i, "");
+      const url = `${TILE_BASE}/${z}/${x}/${y}.png`;
+      try {
+        const remote = await net.fetch(url, { headers: { "User-Agent": TILE_USER_AGENT } });
+        if (!remote.ok) return new Response(null, { status: remote.status });
+        const buf = Buffer.from(await remote.arrayBuffer());
+        await mkdir(join(getTilesCachePath(), parts[0], parts[1]), { recursive: true });
+        await writeFile(filePath, buf);
+        return new Response(buf, {
+          status: 200,
+          headers: { "Content-Type": "image/png" },
+        });
+      } catch (_) {}
     }
+    return new Response(null, { status: 404 });
   });
   buildApplicationMenu();
   createWindow();

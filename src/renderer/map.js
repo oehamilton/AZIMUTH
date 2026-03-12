@@ -160,8 +160,29 @@ function createOrUpdateDetailedMap() {
       renderResults();
       document.getElementById("save-target-btn").style.display = "block";
     });
+    // Initial view: respect Fit path / Full map
+    if (state.mapZoom === MAP_ZOOM_FULL) {
+      leafletMap.setView([home.lat, home.lon], 2);
+    } else if (state.mapZoom === MAP_ZOOM_FIT_PATH && target) {
+      const bounds = window.L.latLngBounds(
+        [Math.min(home.lat, target.lat), Math.min(home.lon, target.lon)],
+        [Math.max(home.lat, target.lat), Math.max(home.lon, target.lon)]
+      );
+      leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+    }
   } else {
-    leafletMap.setView([home.lat, home.lon], leafletMap.getZoom());
+    // Apply Fit path / Full map in Detailed view
+    if (state.mapZoom === MAP_ZOOM_FULL) {
+      leafletMap.setView([home.lat, home.lon], 2);
+    } else if (state.mapZoom === MAP_ZOOM_FIT_PATH && target) {
+      const bounds = window.L.latLngBounds(
+        [Math.min(home.lat, target.lat), Math.min(home.lon, target.lon)],
+        [Math.max(home.lat, target.lat), Math.max(home.lon, target.lon)]
+      );
+      leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+    } else {
+      leafletMap.setView([home.lat, home.lon], leafletMap.getZoom());
+    }
   }
 
   leafletOverlays.clearLayers();
@@ -203,6 +224,11 @@ function createOrUpdateDetailedMap() {
       })
     );
   }
+
+  const zoomFit = document.getElementById("zoom-fit-path");
+  const zoomFull = document.getElementById("zoom-full");
+  if (zoomFit) zoomFit.classList.toggle("active", state.mapZoom === MAP_ZOOM_FIT_PATH);
+  if (zoomFull) zoomFull.classList.toggle("active", state.mapZoom === MAP_ZOOM_FULL);
 }
 
 function setMapViewMode(mode) {
@@ -932,9 +958,13 @@ document.getElementById("map-container")?.addEventListener("click", (e) => {
   const container = document.getElementById("map-container");
   if (!container || !container.contains(e.target)) return;
   if (e.target.closest("#map-zoom-controls") || e.target.closest("#map-legend")) return;
-  const rect = container.getBoundingClientRect();
-  const w = container.clientWidth;
-  const h = container.clientHeight;
+  // In detailed (Leaflet) mode, only Leaflet handles click; container uses D3 projection so skip here.
+  if (state.mapViewMode === MAP_VIEW_DETAILED) return;
+  // In globe mode, use coordinates relative to the SVG so marker appears under the cursor.
+  const svg = document.getElementById("map");
+  const rect = svg ? svg.getBoundingClientRect() : container.getBoundingClientRect();
+  const w = svg ? svg.clientWidth : container.clientWidth;
+  const h = svg ? svg.clientHeight : container.clientHeight;
   if (w <= 0 || h <= 0) return;
   const x = ((e.clientX - rect.left) / rect.width) * w;
   const y = ((e.clientY - rect.top) / rect.height) * h;
