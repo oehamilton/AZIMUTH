@@ -17,6 +17,14 @@ await esbuild.build({
   platform: "browser",
 });
 
+await esbuild.build({
+  entryPoints: [join(root, "src", "renderer", "capacitor-bridge-entry.js")],
+  bundle: true,
+  format: "iife",
+  outfile: join(outDir, "capacitor-bridge.js"),
+  platform: "browser",
+});
+
 const leafletDist = join(root, "node_modules", "leaflet", "dist");
 if (existsSync(leafletDist)) {
   cpSync(leafletDist, join(outDir, "leaflet"), { recursive: true });

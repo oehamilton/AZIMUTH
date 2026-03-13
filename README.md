@@ -45,8 +45,18 @@ pnpm start   # builds renderer and launches Electron
 
 **Icon:** Edit `build/icon.svg` and run `pnpm run build:icon` to regenerate `build/icon.png` used by the app and installer.
 
+## Android (Capacitor)
+
+- **Requirements:** Android Studio, JDK 17+, Node ≥20, pnpm.
+- **Build and sync:**  
+  `pnpm run cap:sync`  
+  Builds the renderer and copies web assets into `android/`.
+- **Open in Android Studio / run on device or emulator:**  
+  `pnpm run android`  
+  Opens the `android` project in Android Studio so you can run the app. Data is stored locally via Capacitor Filesystem (same schema as desktop).
+
 ## Stack (planned)
 
-- **Platform:** Electron, Windows 11 only, MSIX installer
+- **Platform:** Electron (Windows 11), Capacitor (Android). MSIX installer on Windows.
 - **Maps:** Flat azimuthal projection; bundled default world map (free); optional cache from OSM
 - **Data:** Single JSON file (homes, targets, preferences), local or user-chosen path (e.g. OneDrive)

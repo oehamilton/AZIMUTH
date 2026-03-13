@@ -984,7 +984,17 @@ document.getElementById("map-container")?.addEventListener("click", (e) => {
   document.getElementById("save-target-btn").style.display = "block";
 });
 
-loadAndRender().catch((e) => clearLoadStatus(e));
+function startApp() {
+  loadAndRender().catch((e) => clearLoadStatus(e));
+}
+if (window.azimuth) {
+  startApp();
+} else {
+  window.addEventListener("azimuth-ready", function onReady() {
+    window.removeEventListener("azimuth-ready", onReady);
+    startApp();
+  });
+}
 
 window.addEventListener("focus", () => {
   if (window.azimuth?.loadData) {

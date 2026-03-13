@@ -23,6 +23,12 @@
     * { box-sizing: border-box; }
     body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg-app); color: var(--text); font-size: 14px; line-height: 1.45; }
     #app { display: flex; height: 100vh; min-width: 640px; }
+    @media (pointer: coarse) {
+      #app { min-width: 0; }
+      #sidebar { min-width: 260px; }
+      form.side-form button, .sidebar-select, .btn-danger, .map-controls button { min-height: 44px; }
+      #map-zoom-controls button, #map-legend .legend-row { min-height: 36px; padding: 0.4rem 0.6rem; }
+    }
     #sidebar { width: 300px; min-width: 280px; padding: 1rem; background: var(--bg-sidebar); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem; }
     #sidebar h2 { margin: 0 0 0.4rem 0; font-size: 0.8125rem; font-weight: 600; color: var(--accent); letter-spacing: 0.02em; }
     form.side-form { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -164,6 +170,7 @@
     </div>
   </div>
   <script src="leaflet/leaflet.js"></script>
+  <script src="capacitor-bridge.js"></script>
   <script src="map.js"></script>
 </body>
 </html>
