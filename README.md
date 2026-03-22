@@ -9,6 +9,7 @@ Antenna pointing app: world map with home at center, target selection, and **sho
 | Main window |
 |-------------|
 | ![AZIMUTH main window](docs/screenshots/main.png) |
+<img width="2374" height="1589" alt="image" src="https://github.com/user-attachments/assets/38d35c13-151a-4621-a95d-67fe00a75c8d" />
 
 See **plan.md** for the full development plan and Phase 0 detailed steps.
 
