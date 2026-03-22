@@ -1,6 +1,6 @@
 {
   "name": "azimuth",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Antenna pointing: bearing and distance from home to target (short and long path). Windows 11, Electron, offline-first maps.",
   "private": true,
   "type": "module",
